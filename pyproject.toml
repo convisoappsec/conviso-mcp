@@ -1,0 +1,26 @@
+[project]
+name = "conviso-mcp"
+version = "0.1.0"
+description = "MCP Server for Conviso Platform integration"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Conviso", email = "rd@conviso.com.br" }
+]
+dependencies = [
+    "fastmcp==3.0.0",
+    "python-dotenv==0.9.9",
+    "fastapi==0.129.0",
+    "uvicorn==0.41.0",
+    "requests==2.32.5",
+]
+
+[project.scripts]
+conviso-mcp = "conviso_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

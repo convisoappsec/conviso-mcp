@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Build and Distribution
+dist/
+build/
+*.egg-info/
+
+# Logs and Debug
+mcp_debug.txt
+*.log
+
+# System
+.DS_Store
+Thumbs.db
