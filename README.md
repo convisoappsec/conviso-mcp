@@ -37,18 +37,73 @@ cd conviso-mcp
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
 ```
 
-### 2. Claude Desktop Configuration
+### 2. Alternative Execution Methods
+
+#### Using Docker (Recommended for isolation)
+
+If you prefer not to manage a local Python environment, you can build and run the server using Docker.
+
+1. Build the image:
+
+```bash
+docker build -t conviso-mcp .
+```
+
+2. Configuration in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp-docker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e", "CONVISO_API_KEY=your_api_key_here",
+        "conviso-mcp"
+      ]
+    }
+  }
+}
+```
+
+#### Using uv (Fastest setup)
+
+[uv](https://github.com/astral-sh/uv) is an extremely fast Python package manager that can run the server without manual environment creation.
+
+Configuration in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp-uv": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/PATH/TO/YOUR/PROJECT",
+        "run",
+        "conviso-mcp"
+      ],
+      "env": {
+        "CONVISO_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+### 3. Claude Desktop Configuration (Standard Python)
 
 Claude Desktop reads connector settings from a JSON configuration file. Follow the steps below to set it up:
 
 1. Open the configuration file in your preferred editor:
+
 * **Linux:** `~/.config/Claude/claude_desktop_config.json`
 * **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 * **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
 
 2. Add the following entry (ensure you use absolute paths for your specific machine):
 
@@ -66,12 +121,11 @@ Claude Desktop reads connector settings from a JSON configuration file. Follow t
     }
   }
 }
-
 ```
 
 > **Warning:** Always use absolute paths. On Linux/macOS, avoid using `~/`; use the full path like `/home/user/`.
 
-### 3. Restart Claude
+### 4. Restart Claude
 
 Fully exit Claude Desktop and reopen it. Look for the **plug icon** at the bottom-right of the chat interface. If it is visible and `conviso-mcp` is listed with a green status light, the connection is active!
 

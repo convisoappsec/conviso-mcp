@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 venv/
 .env
+uv.lock
 
 # Build and Distribution
 dist/
