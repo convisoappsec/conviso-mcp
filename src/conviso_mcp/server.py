@@ -77,6 +77,16 @@ def create_issue_url(company_id: int, issue_id: int):
     return gateway.create_issue_url(company_id=company_id, issue_id=issue_id)
 
 @mcp.tool()
+def get_mttr_over_time(company_id: int, start_date: str, end_date: str, severities: list = None, statuses: list = None, asset_ids: list = None, asset_tags: list = None):
+    """Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level."""
+    return gateway.get_mttr_over_time(company_id, start_date, end_date, severities, statuses, asset_ids, asset_tags)
+
+@mcp.tool()
+def get_overall_risk_score_history(company_id: int):
+    """Get overall risk score history for a company, including current score and difference from last period."""
+    return gateway.get_overall_risk_score_history(company_id)
+
+@mcp.tool()
 def get_today_date():
     """Get today date."""
     date = datetime.today()

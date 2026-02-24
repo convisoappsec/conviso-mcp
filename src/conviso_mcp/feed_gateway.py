@@ -86,6 +86,12 @@ class FeedGateway:
     def create_issue_url(self, company_id: int, issue_id: int):
         return f"{self.base_url}/spa/company/{company_id}/vulnerabilities?title=&search={issue_id}"
     
+    def get_mttr_over_time(self, company_id: int, start_date: str, end_date: str, severities: list = None, statuses: list = None, asset_ids: list = None, asset_tags: list = None):
+        return self.graphql.get_mttr_over_time(company_id, start_date, end_date, severities, statuses, asset_ids, asset_tags)
+    
+    def get_overall_risk_score_history(self, company_id: int):
+        return self.graphql.get_overall_risk_score_history(company_id)
+    
 
 if __name__ == "__main__":
     print(FeedGateway("https://staging.convisoappsec.com").get_issue_with_company_id(248,135606)["issues"]["collection"][0]["id"])

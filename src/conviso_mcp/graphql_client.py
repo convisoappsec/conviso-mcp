@@ -384,6 +384,11 @@ class GraphQLClient:
                     id
                     
                 }
+                riskScore{
+                    current{
+                        value
+                    }
+                }
             }
         }
         """
@@ -449,16 +454,14 @@ class GraphQLClient:
             "limit": limit
         }
         return self.execute(query, variables)
-    
 
     def get_top_vulnerabilities(
         self,
-        company_id: int,
-        severities: list = None
+        company_id: int
     ) -> Dict[str, Any]:
         query = """
-        query TopVulnerabilities($companyId: ID!, $severities: [SeverityCategory!]!) {
-            topVulnerabilities(companyId: $companyId, severities: $severities) {
+        query TopVulnerabilities($companyId: ID!) {
+            topVulnerabilities(companyId: $companyId) {
                 affectedAssetsCount
                 criticalCount
                 highCount
@@ -470,11 +473,10 @@ class GraphQLClient:
         }
         """
         variables = {
-            "companyId": company_id,
-            "severities": severities or ["NOTIFICATION", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+            "companyId": company_id
         }
         return self.execute(query, variables)
-    
+
     def get_issues_stats(
         self,
         company_id: int,
@@ -698,8 +700,55 @@ class GraphQLClient:
         }
         return self.execute(query, variables)
 
+    def get_mttr_over_time(self, company_id: int, start_date: str, end_date: str, severities: list = None, statuses: list = None, asset_ids: list = None, asset_tags: list = None) -> Dict[str, Any]:
+        query = """
+        query MttrOverTime($companyId: ID!, $params: FilterParams!) {
+            mttrOverTime(companyId: $companyId, params: $params) {
+                all
+                critical
+                dates
+                high
+                low
+                medium
+                notification
+            }
+        }
+        """
+        variables = {
+            "companyId": company_id,
+            "params": {
+                "startDate": start_date,
+                "endDate": end_date,
+                "severities": severities or ["NOTIFICATION", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+                "statuses": statuses or ["CREATED", "DRAFT", "IDENTIFIED", "IN_PROGRESS", "AWAITING_VALIDATION", "FIX_ACCEPTED", "RISK_ACCEPTED", "FALSE_POSITIVE", "SUPPRESSED"],
+                "assetIds": asset_ids or [],
+                "assetTags": asset_tags or []
+            }
+        }
+        return self.execute(query, variables)
 
-
+    def get_overall_risk_score_history(self, company_id: int) -> Dict[str, Any]:
+        query = """
+        query OverallRiskScoreHistory($companyId: ID!) {
+            overallRiskScoreHistory(companyId: $companyId) {
+                company {
+                    id
+                    label
+                }
+                current {
+                    date
+                    value
+                }
+                differenceFromLast {
+                    date
+                    value
+                }
+            }
+        }
+        """
+        variables = {"companyId": company_id}
+        return self.execute(query, variables)
+    
 
 if __name__ == "__main__":
     import dotenv, os
@@ -739,5 +788,12 @@ if __name__ == "__main__":
     data = client.generate_project_report_progress(3263, 1260)
     print(data)'''
 
-    data = client.get_projects(248, 1, 100, "mode")
+    #data = client.get_projects(248, 1, 100, "mode")
+
+    #data = client.get_mttr_over_time(248, "2024-01-01", "2024-12-31")
+
+    #data = client.get_overall_risk_score_history(11)
+
+    data = client.get_top_vulnerabilities(248)
+
     print(data)
