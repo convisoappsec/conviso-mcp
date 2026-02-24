@@ -18,6 +18,8 @@ The server exposes the following tools to the LLM:
 | **Management** | `get_projects` | List active security projects. |
 | **Assets** | `get_assets` | List assets mapped within the platform. |
 | **Utilities** | `create_issue_url` | Generates a direct link to the specific issue on the Conviso Platform. |
+| **Metrics** | `get_mttr_over_time` | Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level. |
+| **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
 
 ## 🚀 Installation and Configuration
 
