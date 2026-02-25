@@ -27,11 +27,11 @@ The server exposes the following tools to the LLM:
 
 * Python 3.10 or higher installed.
 * A Conviso Platform API Key (obtained from your profile settings).
-* [Claude Desktop](https://claude.ai/download) installed.
+* An MCP-compatible client (e.g., [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.com/), etc).
 
-### 1. Environment Setup
+### 1. Server Setup
 
-Clone this repository and configure the virtual environment:
+Clone this repository and configure the virtual environment to run the server locally:
 
 ```bash
 git clone https://github.com/convisoappsec/conviso-mcp.git
@@ -41,81 +41,91 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Alternative Execution Methods
+### 2. Execution Methods
 
 #### Using Docker (Recommended for isolation)
 
-If you prefer not to manage a local Python environment, you can build and run the server using Docker.
-
-1. Build the image:
+You can build and run the server using Docker to avoid local dependency conflicts.
 
 ```bash
 docker build -t conviso-mcp .
 ```
 
-2. Configuration in `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "conviso-mcp-docker": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-e", "CONVISO_API_KEY=your_api_key_here",
-        "conviso-mcp"
-      ]
-    }
-  }
-}
-```
-
 #### Using uv (Fastest setup)
 
-[uv](https://github.com/astral-sh/uv) is an extremely fast Python package manager that can run the server without manual environment creation.
+[uv](https://github.com/astral-sh/uv) can run the server directly from the `pyproject.toml` without manual environment management.
 
-Configuration in `claude_desktop_config.json`:
+---
 
-```json
-{
-  "mcpServers": {
-    "conviso-mcp-uv": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/PATH/TO/YOUR/PROJECT",
-        "run",
-        "conviso-mcp"
-      ],
-      "env": {
-        "CONVISO_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
+### 3. Client Configuration Examples
 
-### 3. Claude Desktop Configuration (Standard Python)
+The Conviso MCP Server can be integrated into any MCP-compatible host. Below are examples for common clients.
 
-Claude Desktop reads connector settings from a JSON configuration file. Follow the steps below to set it up:
+#### Example: Claude Desktop
 
-1. Open the configuration file in your preferred editor:
+Claude Desktop reads settings from a JSON file. Location:
 
 * **Linux:** `~/.config/Claude/claude_desktop_config.json`
 * **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 * **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-2. Add the following entry (ensure you use absolute paths for your specific machine):
+Add one of the following entries based on your preferred execution method:
+
+##### A. Standard Python (Local Venv)
 
 ```json
 {
   "mcpServers": {
     "conviso-mcp": {
       "command": "/PATH/TO/YOUR/PROJECT/venv/bin/python",
+      "args": ["/PATH/TO/YOUR/PROJECT/src/conviso_mcp/server.py"],
+      "env": { "CONVISO_API_KEY": "your_api_key_here" }
+    }
+  }
+}
+```
+
+##### B. Docker
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp-docker": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "CONVISO_API_KEY=your_api_key_here", "conviso-mcp"]
+    }
+  }
+}
+```
+
+##### C. uv
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp-uv": {
+      "command": "uv",
+      "args": ["--directory", "/PATH/TO/YOUR/PROJECT", "run", "conviso-mcp"],
+      "env": { "CONVISO_API_KEY": "your_api_key_here" }
+    }
+  }
+}
+```
+
+#### Example: Cursor
+
+Add the following JSON file, `mcp.json` or equivalent configuration, to the `.cursor` folder:
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp": {
+      "command": "uv",
       "args": [
-        "/PATH/TO/YOUR/PROJECT/src/conviso_mcp/server.py"
+        "--directory",
+        "/ABSOLUTE/PATH/TO/src/conviso_mcp",
+        "run",
+        "conviso-mcp"
       ],
       "env": {
         "CONVISO_API_KEY": "your_api_key_here"
@@ -125,11 +135,15 @@ Claude Desktop reads connector settings from a JSON configuration file. Follow t
 }
 ```
 
-> **Warning:** Always use absolute paths. On Linux/macOS, avoid using `~/`; use the full path like `/home/user/`.
+> **Warning:** Always use absolute paths for commands and arguments.
 
-### 4. Restart Claude
+### 4. Verification
 
-Fully exit Claude Desktop and reopen it. Look for the **plug icon** at the bottom-right of the chat interface. If it is visible and `conviso-mcp` is listed with a green status light, the connection is active!
+After configuring your chosen client:
+
+1. Restart the application.
+2. Look for the MCP connection status (in Claude, this is the **plug icon**).
+3. Ensure the `conviso-mcp` status is active/green.
 
 ## 🛡 Security and Privacy
 

@@ -3,7 +3,7 @@ name = "conviso-mcp"
 version = "0.1.0"
 description = "MCP Server for Conviso Platform integration"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 authors = [
     { name = "Conviso", email = "rd@conviso.com.br" }
 ]
