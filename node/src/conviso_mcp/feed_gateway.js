@@ -22,7 +22,7 @@ class FeedGateway {
   }
 
   async get_company_by_id(company_id) {
-    return this.graphql.get_company_by_id ? this.graphql.get_company_by_id(company_id) : this.graphql.get_company_by_id(company_id);
+    return this.graphql.get_company_by_id(company_id);
   }
 
   async get_issue_by_id(issue_id, return_snippets = false) {

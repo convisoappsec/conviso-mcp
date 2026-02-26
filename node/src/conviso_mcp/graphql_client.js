@@ -310,6 +310,33 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
+  async get_company_by_id(company_id) {
+    const query = `
+        query Company($id: ID!) {
+        company(id: $id) {
+            id
+            label
+            sid
+            brandUrl
+            brandId
+            brandFilename
+            brandSize
+            customFeatures
+            integrations
+            createdAt
+            updatedAt
+            configured
+            companyPlan {
+            name
+            id
+            }
+        }
+        }
+        `;
+    const variables = { id: company_id };
+    return this.execute(query, variables);
+  }
+
   async get_assets_by_company(company_id, page = 1, limit = 10) {
     const query = `
         query ListAssets($companyId: ID!, $page: Int, $limit: Int) {

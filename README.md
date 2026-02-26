@@ -42,7 +42,7 @@ git clone https://github.com/convisoappsec/conviso-mcp.git
 cd conviso-mcp
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r python/requirements.txt
 ```
 
 Node.js:
