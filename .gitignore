@@ -6,6 +6,12 @@ venv/
 .env
 uv.lock
 
+# Node
+node_modules/
+dist/
+build/
+*.log
+
 # Build and Distribution
 dist/
 build/
