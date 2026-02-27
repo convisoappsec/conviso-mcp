@@ -143,7 +143,8 @@ Node.js:
         "-i",
         "--rm",
         "--init",
-        "-e", "CONVISO_API_KEY=your_api_key_here",
+        "-e",
+        "CONVISO_API_KEY=your_api_key_here",
         "conviso-mcp-node-image"
       ]
     }
