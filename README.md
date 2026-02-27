@@ -16,8 +16,11 @@ The server exposes the following tools to the LLM:
 | **Vulnerabilities** | `get_issue` | Technical details, including **code snippets** and raw requests/responses. |
 | **Vulnerabilities** | `get_top_vulnerabilities` | Risk overview (vulnerability count by severity). |
 | **Management** | `get_projects` | List active security projects. |
+| **Management** | `get_project` | Get specific project in Conviso Platform by project ID. |
 | **Assets** | `get_assets` | List assets mapped within the platform. |
+| **Assets** | `get_asset` | Get asset in Conviso Platform by asset ID. |
 | **Utilities** | `create_issue_url` | Generates a direct link to the specific issue on the Conviso Platform. |
+| **Utilities** | `create_project_url` | Generates a direct link to the specific project on the Conviso Platform. |
 | **Metrics** | `get_mttr_over_time` | Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level. |
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
 
@@ -33,12 +36,20 @@ The server exposes the following tools to the LLM:
 
 Clone this repository and configure the virtual environment to run the server locally:
 
+Python:
 ```bash
 git clone https://github.com/convisoappsec/conviso-mcp.git
 cd conviso-mcp
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r python/requirements.txt
+```
+
+Node.js:
+```bash
+git clone https://github.com/convisoappsec/conviso-mcp.git
+cd conviso-mcp/node
+npm install
 ```
 
 ### 2. Execution Methods
@@ -48,12 +59,17 @@ pip install -r requirements.txt
 You can build and run the server using Docker to avoid local dependency conflicts.
 
 ```bash
-docker build -t conviso-mcp .
+docker build -t conviso-mcp -f python/Dockerfile python/ # For Python version
+docker build -t conviso-mcp-node-image -f node/Dockerfile node/ # For Node.js version
 ```
 
-#### Using uv (Fastest setup)
+#### Using uv (Python)
 
 [uv](https://github.com/astral-sh/uv) can run the server directly from the `pyproject.toml` without manual environment management.
+
+#### Using npm (Node.js)
+
+[npm](https://www.npmjs.com/) can run the server directly from the package.json without requiring virtual environments or manual dependency management.
 
 ---
 
@@ -78,14 +94,32 @@ Add one of the following entries based on your preferred execution method:
   "mcpServers": {
     "conviso-mcp": {
       "command": "/PATH/TO/YOUR/PROJECT/venv/bin/python",
-      "args": ["/PATH/TO/YOUR/PROJECT/src/conviso_mcp/server.py"],
+      "args": ["/PATH/TO/YOUR/PROJECT/python/src/conviso_mcp/server.py"],
       "env": { "CONVISO_API_KEY": "your_api_key_here" }
     }
   }
 }
 ```
 
-##### B. Docker
+##### B. Node.js (Local)
+
+```json
+{
+  "mcpServers": {
+    "conviso-mcp": {
+      "command": "node",
+      "args": [
+        "/PATH/TO/YOUR/PROJECT/node/src/conviso_mcp/server.js"
+      ],
+      "env": {
+        "CONVISO_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+##### C. Docker
 
 ```json
 {
@@ -98,7 +132,26 @@ Add one of the following entries based on your preferred execution method:
 }
 ```
 
-##### C. uv
+Node.js:
+```json
+{
+  "mcpServers": {
+    "conviso-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--init",
+        "-e", "CONVISO_API_KEY=your_api_key_here",
+        "conviso-mcp-node-image"
+      ]
+    }
+  }
+}
+```
+
+##### D. uv
 
 ```json
 {

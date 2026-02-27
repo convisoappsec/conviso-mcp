@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from mcp.server.fastmcp import FastMCP
 import os, sys
 from datetime import datetime

@@ -1,0 +1,67 @@
+{
+  "manifest_version": "0.3",
+  "name": "conviso-mcp",
+  "display_name": "Conviso MCP Server",
+  "version": "0.2.0",
+  "description": "Expose Conviso Platform data (companies, projects, issues, assets, metrics) to MCP clients.",
+  "long_description": "This MCP server provides tools to query companies, projects, issues, assets and risk metrics from the Conviso Platform.",
+  "author": {
+    "name": "Conviso",
+    "url": "https://github.com/convisoappsec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/convisoappsec/conviso-mcp.git"
+  },
+  "homepage": "https://github.com/convisoappsec/conviso-mcp",
+  "documentation": "https://github.com/convisoappsec/conviso-mcp#readme",
+  "support": "https://github.com/convisoappsec/conviso-mcp/issues",
+  "icon": "assets/conviso_icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "src/conviso_mcp/server.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["src/conviso_mcp/server.js"],
+      "env": {
+        "CONVISO_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "get_companies", "description": "List companies and associated IDs." },
+    { "name": "get_company_info", "description": "Get company plan, integrations and branding details." },
+    { "name": "get_issues", "description": "List vulnerabilities by company or project (supports page, limit, project_id)." },
+    { "name": "get_issue", "description": "Get technical details for an issue, optionally including code/request/response snippets." },
+    { "name": "get_top_vulnerabilities", "description": "Risk overview (vulnerability counts by severity)." },
+    { "name": "get_projects", "description": "List active security projects (supports page, limit, search)." },
+    { "name": "get_project", "description": "Get specific project details by ID." },
+    { "name": "get_assets", "description": "List assets for a company (supports page, limit)." },
+    { "name": "get_asset", "description": "Get asset details by ID." },
+    { "name": "create_issue_url", "description": "Generate a direct URL to an issue in the Conviso Platform." },
+    { "name": "create_project_url", "description": "Generate a direct URL to a project in the Conviso Platform." },
+    { "name": "get_mttr_over_time", "description": "Get MTTR metrics over time (supports severities, statuses, asset filters)." },
+    { "name": "get_overall_risk_score_history", "description": "Get overall risk score history for a company." },
+    { "name": "get_today_date", "description": "Return current day/month/year (utility)." }
+  ],
+  "tools_generated": false,
+  "keywords": ["mcp","conviso","security","vulnerabilities","mcp-server"],
+  "license": "MIT",
+  "privacy_policies": [],
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "Conviso API Key",
+      "description": "Your Conviso Platform API key",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}
