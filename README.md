@@ -105,17 +105,17 @@ Add one of the following entries based on your preferred execution method:
 
 ```json
 {
-  "mcpServers": {
-    "conviso-mcp": {
-      "command": "node",
-      "args": [
-        "/PATH/TO/YOUR/PROJECT/node/src/conviso_mcp/server.js"
-      ],
-      "env": {
-        "CONVISO_API_KEY": "your_api_key_here"
-      }
-    }
-  }
+  "mcpServers": {
+    "conviso-mcp": {
+      "command": "node",
+      "args": [
+        "/PATH/TO/YOUR/PROJECT/node/src/conviso_mcp/server.js"
+      ],
+      "env": {
+        "CONVISO_API_KEY": "your_api_key_here"
+      }
+    }
+  }
 }
 ```
 
