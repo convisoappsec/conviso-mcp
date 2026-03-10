@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Expose Conviso Platform data (companies, projects, issues, assets, metrics) to MCP clients.",
   "long_description": "This MCP server provides tools to query companies, projects, issues, assets and risk metrics from the Conviso Platform.",
   "author": {
@@ -29,25 +29,69 @@
     }
   },
   "tools": [
-    { "name": "get_companies", "description": "List companies and associated IDs." },
-    { "name": "get_company_info", "description": "Get company plan, integrations and branding details." },
-    { "name": "get_issues", "description": "List vulnerabilities by company or project (supports page, limit, project_id)." },
-    { "name": "get_issue", "description": "Get technical details for an issue, optionally including code/request/response snippets." },
-    { "name": "get_top_vulnerabilities", "description": "Risk overview (vulnerability counts by severity)." },
-    { "name": "get_projects", "description": "List active security projects (supports page, limit, search)." },
-    { "name": "get_project", "description": "Get specific project details by ID." },
-    { "name": "get_assets", "description": "List assets for a company (supports page, limit)." },
-    { "name": "get_asset", "description": "Get asset details by ID." },
-    { "name": "create_issue_url", "description": "Generate a direct URL to an issue in the Conviso Platform." },
-    { "name": "create_project_url", "description": "Generate a direct URL to a project in the Conviso Platform." },
-    { "name": "get_mttr_over_time", "description": "Get MTTR metrics over time (supports severities, statuses, asset filters)." },
-    { "name": "get_overall_risk_score_history", "description": "Get overall risk score history for a company." },
-    { "name": "get_today_date", "description": "Return current day/month/year (utility)." }
+    {
+      "name": "get_companies",
+      "description": "Return a paginated list of companies accessible with the provided API key. Use `search` to filter by company name."
+    },
+    {
+      "name": "get_company_info",
+      "description": "Retrieve detailed information about a specific company, including plan, integrations, and branding metadata."
+    },
+    {
+      "name": "get_issues",
+      "description": "List vulnerabilities for a company or project. Supports pagination and filtering by project."
+    },
+    {
+      "name": "get_issue",
+      "description": "Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets."
+    },
+    {
+      "name": "get_top_vulnerabilities",
+      "description": "Return a summary of vulnerability counts grouped by severity for a given company (risk overview)."
+    },
+    {
+      "name": "get_projects",
+      "description": "Return a paginated list of active security projects for a company. Defaults to 25 results per page to conserve tokens."
+    },
+    {
+      "name": "get_project",
+      "description": "Retrieve detailed metadata for a specific project by its ID."
+    },
+    {
+      "name": "get_assets",
+      "description": "Return a paginated list of assets for a company. Defaults to 25 results per page to reduce token usage."
+    },
+    {
+      "name": "get_asset",
+      "description": "Fetch information about a specific asset by its ID."
+    },
+    {
+      "name": "create_issue_url",
+      "description": "Return a direct URL to open a specific issue in the Conviso Platform for triage or review."
+    },
+    {
+      "name": "create_project_url",
+      "description": "Return a direct URL to open a project in the Conviso Platform for quick navigation."
+    },
+    {
+      "name": "get_mttr_over_time",
+      "description": "Get Mean Time To Resolution (MTTR) aggregated over a date range. Supports filtering by severities, statuses, and assets."
+    },
+    {
+      "name": "get_overall_risk_score_history",
+      "description": "Retrieve historical overall risk scores for a company, useful for trend analysis and reporting."
+    },
+    {
+      "name": "get_today_date",
+      "description": "Utility tool returning the current day, month and year."
+    }
   ],
   "tools_generated": false,
   "keywords": ["mcp","conviso","security","vulnerabilities","mcp-server"],
   "license": "MIT",
-  "privacy_policies": [],
+  "privacy_policies": [
+    "https://www.iubenda.com/privacy-policy/55589285"
+  ],
   "compatibility": {
     "claude_desktop": ">=1.0.0",
     "platforms": ["darwin", "win32", "linux"],
