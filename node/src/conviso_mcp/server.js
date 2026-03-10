@@ -14,6 +14,35 @@ console.error('[+] Using base API URL: %s', base_url);
 const _pkg = require('../../package.json');
 const server = new FastMCP({ name: _pkg.name || 'conviso-mcp', version: _pkg.version || '0.2.1' });
 
+function sanitizeError(err, message = 'Request failed') {
+  const error_id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+
+  const status =
+    err?.response?.status ??
+    err?.response?.statusCode ??
+    err?.status ??
+    err?.statusCode ??
+    (err?.code === 'ECONNREFUSED' ? 503 : undefined) ??
+    (err?.code === 'ETIMEDOUT' ? 504 : undefined) ??
+    500;
+
+  const safeLog = {
+    error_id,
+    name: err?.name,
+    code: err?.code,
+    message: err?.message?.slice(0, 200),
+    status
+  };
+
+  console.error('[tool_error]', safeLog);
+
+  return {
+    error: message,
+    status,
+    error_id
+  };
+}
+
 server.addTool({
 	name: 'get_companies',
 	description: 'Return a paginated list of companies accessible with the provided API key. Use `search` to filter by company name.',
@@ -32,8 +61,7 @@ server.addTool({
 			const res = await gateway.get_companies(page, limit, search);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_companies error:', err);
-			return JSON.stringify({ error: 'Failed to list companies', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to list companies'));
 		}
 	},
 });
@@ -49,8 +77,7 @@ server.addTool({
 			const res = await gateway.get_company_by_id(args.company_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_company_info error:', err);
-			return JSON.stringify({ error: 'Failed to get company info', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get company info'));
 		}
 	},
 });
@@ -66,8 +93,7 @@ server.addTool({
 			const res = await gateway.get_issue_by_id(args.id, args.return_vulnerable_data);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_issue error:', err);
-			return JSON.stringify({ error: 'Failed to get issue details', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get issue details'));
 		}
 	},
 });
@@ -83,8 +109,7 @@ server.addTool({
 			const res = await gateway.get_issues(args.company_id, '', args.page ?? 1, args.limit ?? 10, args.project_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_issues error:', err);
-			return JSON.stringify({ error: 'Failed to list issues', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to list issues'));
 		}
 	},
 });
@@ -100,8 +125,7 @@ server.addTool({
 			const res = await gateway.get_top_vulnerabilities(args.company_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_top_vulnerabilities error:', err);
-			return JSON.stringify({ error: 'Failed to get top vulnerabilities', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get top vulnerabilities'));
 		}
 	},
 });
@@ -117,8 +141,7 @@ server.addTool({
 			const res = await gateway.get_projects(args.company_id, args.page ?? 1, args.limit ?? 25, args.search ?? '');
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_projects error:', err);
-			return JSON.stringify({ error: 'Failed to list projects', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to list projects'));
 		}
 	},
 });
@@ -134,8 +157,7 @@ server.addTool({
 			const res = await gateway.get_project_by_id(args.project_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_project error:', err);
-			return JSON.stringify({ error: 'Failed to get project', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get project'));
 		}
 	},
 });
@@ -151,8 +173,7 @@ server.addTool({
 			const res = await gateway.get_asset_by_id(args.asset_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_asset error:', err);
-			return JSON.stringify({ error: 'Failed to get asset', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get asset'));
 		}
 	},
 });
@@ -168,8 +189,7 @@ server.addTool({
 			const res = await gateway.get_assets(args.company_id, args.page ?? 1, args.limit ?? 25);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_assets error:', err);
-			return JSON.stringify({ error: 'Failed to list assets', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to list assets'));
 		}
 	},
 });
@@ -185,8 +205,7 @@ server.addTool({
 			const res = await gateway.create_project_url(args.company_id, args.project_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('create_project_url error:', err);
-			return JSON.stringify({ error: 'Failed to create project URL', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to create project URL'));
 		}
 	},
 });
@@ -202,8 +221,7 @@ server.addTool({
 			const res = await gateway.create_issue_url(args.company_id, args.issue_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('create_issue_url error:', err);
-			return JSON.stringify({ error: 'Failed to create issue URL', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to create issue URL'));
 		}
 	},
 });
@@ -227,8 +245,7 @@ server.addTool({
 			const res = await gateway.get_mttr_over_time(args.company_id, args.start_date, args.end_date, args.severities, args.statuses, args.asset_ids, args.asset_tags);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_mttr_over_time error:', err);
-			return JSON.stringify({ error: 'Failed to get MTTR metrics', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get MTTR metrics'));
 		}
 	},
 });
@@ -244,8 +261,7 @@ server.addTool({
 			const res = await gateway.get_overall_risk_score_history(args.company_id);
 			return typeof res === 'string' ? res : JSON.stringify(res);
 		} catch (err) {
-			console.error('get_overall_risk_score_history error:', err);
-			return JSON.stringify({ error: 'Failed to get risk score history', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get risk score history'));
 		}
 	},
 });
@@ -262,8 +278,7 @@ server.addTool({
 			const res = { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
 			return JSON.stringify(res);
 		} catch (err) {
-			console.error('get_today_date error:', err);
-			return JSON.stringify({ error: 'Failed to get current date', details: err?.message ?? String(err) });
+			return JSON.stringify(sanitizeError(err, 'Failed to get current date'));
 		}
 	},
 });

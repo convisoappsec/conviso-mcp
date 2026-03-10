@@ -175,18 +175,37 @@ class GraphQLClient {
 
   async execute(query, variables = {}) {
     const payload = { query, variables };
+
     let response;
+
     try {
       response = await axios.post(this.endpoint, payload, { headers: this.headers });
     } catch (err) {
       if (err.response) {
-        throw new Error(`GraphQL query failed: ${err.response.status} - ${JSON.stringify(err.response.data)}`);
+        const e = new Error('GraphQL request failed');
+        e.status = err.response.status;
+        throw e;
       }
+
+      if (err.code === 'ECONNREFUSED') {
+        const e = new Error('Upstream service unavailable');
+        e.status = 503;
+        throw e;
+      }
+
+      if (err.code === 'ETIMEDOUT') {
+        const e = new Error('Upstream request timeout');
+        e.status = 504;
+        throw e;
+      }
+
       throw err;
     }
 
-    if (response.data && response.data.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(response.data.errors)}`);
+    if (response.data?.errors) {
+      const e = new Error('GraphQL error');
+      e.status = 400;
+      throw e;
     }
 
     return response.data.data;
