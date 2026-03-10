@@ -31,72 +31,58 @@
   "tools": [
     {
       "name": "get_companies",
-      "title": "List Companies",
       "description": "Return a paginated list of companies accessible with the provided API key. Use `search` to filter by company name."
     },
     {
       "name": "get_company_info",
-      "title": "Company Details",
       "description": "Retrieve detailed information about a specific company, including plan, integrations, and branding metadata."
     },
     {
       "name": "get_issues",
-      "title": "List Issues",
       "description": "List vulnerabilities for a company or project. Supports pagination and filtering by project."
     },
     {
       "name": "get_issue",
-      "title": "Issue Details",
       "description": "Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets."
     },
     {
       "name": "get_top_vulnerabilities",
-      "title": "Top Vulnerabilities",
       "description": "Return a summary of vulnerability counts grouped by severity for a given company (risk overview)."
     },
     {
       "name": "get_projects",
-      "title": "List Projects",
       "description": "Return a paginated list of active security projects for a company. Defaults to 25 results per page to conserve tokens."
     },
     {
       "name": "get_project",
-      "title": "Project Details",
       "description": "Retrieve detailed metadata for a specific project by its ID."
     },
     {
       "name": "get_assets",
-      "title": "List Assets",
       "description": "Return a paginated list of assets for a company. Defaults to 25 results per page to reduce token usage."
     },
     {
       "name": "get_asset",
-      "title": "Asset Details",
       "description": "Fetch information about a specific asset by its ID."
     },
     {
       "name": "create_issue_url",
-      "title": "Issue URL Generator",
       "description": "Return a direct URL to open a specific issue in the Conviso Platform for triage or review."
     },
     {
       "name": "create_project_url",
-      "title": "Project URL Generator",
       "description": "Return a direct URL to open a project in the Conviso Platform for quick navigation."
     },
     {
       "name": "get_mttr_over_time",
-      "title": "MTTR Over Time",
       "description": "Get Mean Time To Resolution (MTTR) aggregated over a date range. Supports filtering by severities, statuses, and assets."
     },
     {
       "name": "get_overall_risk_score_history",
-      "title": "Risk Score History",
       "description": "Retrieve historical overall risk scores for a company, useful for trend analysis and reporting."
     },
     {
       "name": "get_today_date",
-      "title": "Get Today Date",
       "description": "Utility tool returning the current day, month and year."
     }
   ],
