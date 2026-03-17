@@ -48,6 +48,20 @@ export CONVISO_API_KEY=your_api_key_here
 npm start
 ```
 
+## Staging (optional)
+
+Set the `STAGING` environment variable to `true` to make the server use
+`https://staging.convisoappsec.com` instead of the production API.
+
+Example:
+
+```bash
+# staging (testing only)
+export STAGING=true
+npm start
+```
+
+
 ## Client configuration examples
 
 Below are quick examples showing how to configure Claude Desktop to run the Node bundle locally or via Docker. Paste the appropriate JSON into your Claude Desktop configuration file (see Claude docs for exact path on your OS).
