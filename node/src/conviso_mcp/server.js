@@ -12,7 +12,7 @@ console.error('[+] Starting Conviso MCP Server (FastMCP)');
 console.error('[+] Using base API URL: %s', base_url);
 
 const _pkg = require('../../package.json');
-const server = new FastMCP({ name: _pkg.name || 'conviso-mcp', version: _pkg.version || '0.2.1' });
+const server = new FastMCP({ name: _pkg.name || 'conviso-mcp', version: _pkg.version || '0.2.2' });
 
 function sanitizeError(err, message = 'Request failed') {
   const error_id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
@@ -84,7 +84,7 @@ server.addTool({
 
 server.addTool({
 	name: 'get_issue',
-	description: 'Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets when `return_vulnerable_data` is true.',
+	description: 'Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets when `return_vulnerable_data` is true. WARNING: setting `return_vulnerable_data=true` may return sensitive data (exploit code, raw HTTP requests/responses, or secrets) — use with caution.',
 	annotations: { title: 'Issue Details', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
 	structured_output: false,
 	parameters: z.object({ id: z.number(), return_vulnerable_data: z.boolean().optional() }),
@@ -197,7 +197,7 @@ server.addTool({
 server.addTool({
 	name: 'create_project_url',
 	description: 'Return a direct URL to open a project in the Conviso Platform for quick navigation.',
-	annotations: { title: 'Project URL Generator', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+	annotations: { title: 'Project URL Generator', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
 	structured_output: false,
 	parameters: z.object({ company_id: z.number(), project_id: z.number() }),
 	execute: async (args) => {
@@ -213,7 +213,7 @@ server.addTool({
 server.addTool({
 	name: 'create_issue_url',
 	description: 'Return a direct URL to open a specific issue in the Conviso Platform for triage or review.',
-	annotations: { title: 'Issue URL Generator', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+	annotations: { title: 'Issue URL Generator', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
 	structured_output: false,
 	parameters: z.object({ company_id: z.number(), issue_id: z.number() }),
 	execute: async (args) => {
