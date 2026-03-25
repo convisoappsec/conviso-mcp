@@ -1,6 +1,6 @@
 {
   "name": "@convisoappsec/mcp",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "MCP Server for Conviso Platform integration",
   "main": "src/conviso_mcp/server.js",
   "scripts": {
@@ -31,9 +31,8 @@
   },
   "homepage": "https://github.com/convisoappsec/conviso-mcp#readme",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
     "axios": "^1.13.5",
-    "dotenv": "^16.6.1",
-    "fastmcp": "^3.33.0",
-    "zod": "^3.22.2"
+    "dotenv": "^16.6.1"
   }
 }
