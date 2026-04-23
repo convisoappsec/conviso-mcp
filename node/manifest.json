@@ -24,8 +24,7 @@
       "command": "node",
       "args": ["${__dirname}/src/conviso_mcp/server.js"],
       "env": {
-        "CONVISO_API_KEY": "${user_config.api_key}",
-        "STAGING": "${user_config.staging}"
+        "CONVISO_API_KEY": "${user_config.api_key}"
       }
     }
   },
@@ -107,14 +106,6 @@
       "description": "Your Conviso Platform API key",
       "sensitive": true,
       "required": true
-    }
-  ,
-    "staging": {
-      "type": "boolean",
-      "title": "Use staging environment",
-      "description": "When enabled, the server will point to the Conviso staging platform (staging.convisoappsec.com). Disable for production.",
-      "sensitive": false,
-      "required": false
     }
   }
 }
