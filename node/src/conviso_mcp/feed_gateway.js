@@ -1,5 +1,5 @@
-require('dotenv').config();
-const { GraphQLClient } = require('./graphql_client');
+import 'dotenv/config';
+import { GraphQLClient } from './graphql_client.js';
 
 class FeedGateway {
   constructor(base_url, graphql_api_key = '') {
@@ -9,7 +9,6 @@ class FeedGateway {
   }
 
   static get_base_url() {
-    require('dotenv').config();
     const ENV = process.env.STAGING || false;
     if (!ENV) {
       return 'https://app.convisoappsec.com';
@@ -86,4 +85,4 @@ class FeedGateway {
   }
 }
 
-module.exports = { FeedGateway };
+export { FeedGateway };

@@ -6,10 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 
 import { FeedGateway } from './feed_gateway.js';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const pkg = require('../../package.json');
+import pkg from '../../package.json' with { type: 'json' };
 
 const base_url = FeedGateway.get_base_url();
 const gateway = new FeedGateway(base_url);
