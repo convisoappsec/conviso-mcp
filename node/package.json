@@ -41,6 +41,7 @@
   },
   "homepage": "https://github.com/convisoappsec/conviso-mcp#readme",
   "dependencies": {
+    "@hono/node-server": "^1.19.11",
     "@modelcontextprotocol/sdk": "^1.28.0",
     "axios": "^1.13.5",
     "dotenv": "^16.6.1",
