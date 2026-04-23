@@ -10,15 +10,13 @@ import { z } from 'zod';
 import { FeedGateway } from './feed_gateway.js';
 import pkg from '../../package.json' with { type: 'json' };
 
-const base_url = FeedGateway.get_base_url();
-const gateway = new FeedGateway(base_url);
+const gateway = new FeedGateway();
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
-console.error('[+] Using base API URL: %s', base_url);
 
 const server = new McpServer({
   name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.2.4',
+  version: pkg.version || '0.3.0',
 });
 
 function sanitizeError(err, message = 'Request failed') {
