@@ -1,20 +1,11 @@
-require('dotenv').config();
-const { GraphQLClient } = require('./graphql_client');
+import 'dotenv/config';
+import { GraphQLClient } from './graphql_client.js';
 
 class FeedGateway {
-  constructor(base_url, graphql_api_key = '') {
-    this.base_url = base_url;
+  constructor(graphql_api_key = '') {
+    this.base_url = 'https://app.convisoappsec.com';
     const apiKey = process.env.CONVISO_API_KEY || graphql_api_key || '';
     this.graphql = new GraphQLClient(`${this.base_url}/graphql`, apiKey);
-  }
-
-  static get_base_url() {
-    require('dotenv').config();
-    const ENV = process.env.STAGING || false;
-    if (!ENV) {
-      return 'https://app.convisoappsec.com';
-    }
-    return 'https://staging.convisoappsec.com';
   }
 
   async get_companies(page = 1, limit = 10, search = '') {
@@ -86,4 +77,4 @@ class FeedGateway {
   }
 }
 
-module.exports = { FeedGateway };
+export { FeedGateway };

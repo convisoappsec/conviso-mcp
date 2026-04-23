@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const GraphQLFieldTemplates = {
   complete_issue: `
@@ -532,4 +532,4 @@ class GraphQLClient {
   }
 }
 
-module.exports = { GraphQLClient };
+export { GraphQLClient };

@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 
 import 'dotenv/config';
+import http from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 
 import { FeedGateway } from './feed_gateway.js';
-import { createRequire } from 'module';
+import pkg from '../../package.json' with { type: 'json' };
 
-const require = createRequire(import.meta.url);
-const pkg = require('../../package.json');
-
-const base_url = FeedGateway.get_base_url();
-const gateway = new FeedGateway(base_url);
+const gateway = new FeedGateway();
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
-console.error('[+] Using base API URL: %s', base_url);
 
 const server = new McpServer({
   name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.2.4',
+  version: pkg.version || '0.3.0',
 });
 
 function sanitizeError(err, message = 'Request failed') {
@@ -418,7 +415,24 @@ server.registerTool(
  * START
  */
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
 
-console.error('Conviso MCP Server running on stdio');
+if (PORT) {
+  const httpServer = http.createServer(async (req, res) => {
+    if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
+      res.writeHead(405).end();
+      return;
+    }
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await server.connect(transport);
+    await transport.handleRequest(req, res);
+  });
+
+  httpServer.listen(PORT, () => {
+    console.error(`Conviso MCP Server running on HTTP port ${PORT}`);
+  });
+} else {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error('Conviso MCP Server running on stdio');
+}

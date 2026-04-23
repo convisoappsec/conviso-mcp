@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Expose Conviso Platform data (companies, projects, issues, assets, metrics) to MCP clients.",
   "long_description": "This MCP server provides tools to query companies, projects, issues, assets and risk metrics from the Conviso Platform.",
   "author": {
@@ -24,8 +24,7 @@
       "command": "node",
       "args": ["${__dirname}/src/conviso_mcp/server.js"],
       "env": {
-        "CONVISO_API_KEY": "${user_config.api_key}",
-        "STAGING": "${user_config.staging}"
+        "CONVISO_API_KEY": "${user_config.api_key}"
       }
     }
   },
@@ -107,14 +106,6 @@
       "description": "Your Conviso Platform API key",
       "sensitive": true,
       "required": true
-    }
-  ,
-    "staging": {
-      "type": "boolean",
-      "title": "Use staging environment",
-      "description": "When enabled, the server will point to the Conviso staging platform (staging.convisoappsec.com). Disable for production.",
-      "sensitive": false,
-      "required": false
     }
   }
 }
