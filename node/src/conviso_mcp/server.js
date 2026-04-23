@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import 'dotenv/config';
+import http from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 
 import { FeedGateway } from './feed_gateway.js';
@@ -415,7 +417,24 @@ server.registerTool(
  * START
  */
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
 
-console.error('Conviso MCP Server running on stdio');
+if (PORT) {
+  const httpServer = http.createServer(async (req, res) => {
+    if (req.method !== 'POST' && req.method !== 'GET' && req.method !== 'DELETE') {
+      res.writeHead(405).end();
+      return;
+    }
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await server.connect(transport);
+    await transport.handleRequest(req, res);
+  });
+
+  httpServer.listen(PORT, () => {
+    console.error(`Conviso MCP Server running on HTTP port ${PORT}`);
+  });
+} else {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error('Conviso MCP Server running on stdio');
+}
