@@ -16,7 +16,7 @@ console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
 const server = new McpServer({
   name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.3.0',
+  version: pkg.version || '0.3.2',
 });
 
 function sanitizeError(err, message = 'Request failed') {
@@ -153,6 +153,33 @@ server.registerTool(
       return ok(await gateway.get_issues(company_id, '', page, limit, project_id));
     } catch (err) {
       return fail(err, 'Failed to list issues');
+    }
+  }
+);
+
+server.registerTool(
+  'get_issues_by_asset_ids',
+  {
+    description: 'List vulnerabilities for a company filtered by asset IDs. Supports pagination.',
+    inputSchema: z.object({
+      company_id: z.number(),
+      asset_ids: z.array(z.number()),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+    }),
+    annotations: {
+      title: 'List Issues by Asset IDs',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  async ({ company_id, asset_ids = [], page = 1, limit = 10 }) => {
+    try {
+      return ok(await gateway.get_issues_by_asset_ids(company_id, page, limit, asset_ids));
+    } catch (err) {
+      return fail(err, 'Failed to list issues by asset ids');
     }
   }
 );

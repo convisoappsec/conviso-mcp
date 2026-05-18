@@ -15,6 +15,7 @@ The server exposes the following tools to the LLM:
 | **Vulnerabilities** | `get_issues` | List vulnerabilities by company or project. |
 | **Vulnerabilities** | `get_issue` | Technical details, including **code snippets** and raw requests/responses. |
 | **Vulnerabilities** | `get_top_vulnerabilities` | Risk overview (vulnerability count by severity). |
+| **Vulnerabilities** | `get_issues_by_asset_ids` | List vulnerabilities for a company filtered by asset IDs. |
 | **Management** | `get_projects` | List active security projects. |
 | **Management** | `get_project` | Get specific project in Conviso Platform by project ID. |
 | **Assets** | `get_assets` | List assets mapped within the platform. |
