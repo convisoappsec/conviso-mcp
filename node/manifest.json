@@ -54,8 +54,8 @@
       "description": "Return a paginated list of active security projects for a company. Defaults to 25 results per page to conserve tokens."
     },
     {
-      "name": "get_issues_by_asset_ids",
-      "description": "List vulnerabilities for a company filtered by asset IDs. Supports pagination."
+      "name": "get_issues_by_asset_id",
+      "description": "List vulnerabilities for a company filtered by a single asset ID. Supports pagination."
     },
     {
       "name": "get_project",
