@@ -46,6 +46,10 @@
       "description": "Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets."
     },
     {
+      "name": "get_issues_by_project_id",
+      "description": "List vulnerabilities for a company filtered by a project ID. Supports pagination and optional title search."
+    },
+    {
       "name": "get_top_vulnerabilities",
       "description": "Return a summary of vulnerability counts grouped by severity for a given company (risk overview)."
     },
