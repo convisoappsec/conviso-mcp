@@ -14,16 +14,7 @@ class FeedGateway:
 
     @staticmethod
     def get_base_url() -> str:
-        dotenv.load_dotenv()
-
-        ENV = os.getenv("STAGING", False)
-        if not ENV:
-            base_url = "https://app.convisoappsec.com"
-        else:
-            base_url = "https://staging.convisoappsec.com"
-
-        return base_url
-
+        return "https://app.convisoappsec.com"
 
     def get_companies(self, page: int = 1, limit: int = 10, search=""):
         companies = self.graphql.get_companies(page=page, limit=limit, search=search)
@@ -45,8 +36,8 @@ class FeedGateway:
         issues = self.graphql.get_issues(company_id, search="", page=1, limit=5, issue_ids=[issue_id])
         return issues
     
-    def get_issues_by_asset_ids(self, company_id: str, page: int = 1, limit: int = 1, asset_ids = []):
-        issues = self.graphql.get_issues(company_id, search="", page=page, limit=limit, asset_ids=asset_ids)
+    def get_issues_by_asset_ids(self, company_id: str, page: int = 1, limit: int = 1, asset_ids = [], search: str = ""):
+        issues = self.graphql.get_issues(company_id, search=search, page=page, limit=limit, asset_ids=asset_ids)
         return issues
 
     def get_projects(self, company_id: int, page: int = 1, limit: int = 1000, search: str = ""):

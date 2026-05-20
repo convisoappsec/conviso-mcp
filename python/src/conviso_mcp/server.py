@@ -38,9 +38,9 @@ def get_issue(id: int, return_vulnerable_data: bool = False):
     return gateway.get_issue_by_id(id, return_snippets=return_vulnerable_data)
 
 @mcp.tool()
-def get_issues(company_id: int, page: int, limit: int, project_id: int):
-    """Get issues list in Conviso Platform by company ID. Project ID is optional."""
-    return gateway.get_issues(company_id, search="", page=page, limit=limit, project_id=project_id)
+def get_issues(company_id: int, page: int = 1, limit: int = 10, project_id: int = None, search: str = ""):
+    """Get issues list in Conviso Platform by company ID. Project ID is optional. Supports optional title search via `search`."""
+    return gateway.get_issues(company_id, search=search, page=page, limit=limit, project_id=project_id)
 
 @mcp.tool()
 def get_top_vulnerabilities(company_id: int):
@@ -61,6 +61,16 @@ def get_project(project_id: int):
 def get_asset(asset_id: int):
     """Get asset in Conviso Platform by asset ID."""
     return gateway.get_asset_by_id(asset_id)
+
+@mcp.tool()
+def get_issues_by_asset_id(company_id: int, asset_id: int, page: int = 1, limit: int = 10, search: str = ""):
+    """Get issues list filtered by a single asset ID. Supports pagination and optional title search."""
+    return gateway.get_issues_by_asset_ids(company_id=company_id, page=page, limit=limit, asset_ids=[asset_id], search=search)
+
+@mcp.tool()
+def get_issues_by_project_id(company_id: int, project_id: int, page: int = 1, limit: int = 10, search: str = ""):
+    """Get issues list filtered by project ID. Supports pagination and optional title search."""
+    return gateway.get_issues(company_id, search=search, page=page, limit=limit, project_id=project_id)
 
 @mcp.tool()
 def get_assets(company_id: int, page: int, limit: int):
