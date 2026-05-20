@@ -1,6 +1,6 @@
 {
   "name": "@convisoappsec/mcp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "MCP Server for Conviso Platform integration",
   "type": "module",
   "main": "src/conviso_mcp/server.js",
@@ -43,7 +43,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.11",
     "@modelcontextprotocol/sdk": "^1.28.0",
-    "axios": "^1.13.5",
+    "axios": "^1.16.1",
     "dotenv": "^16.6.1",
     "zod": "^4.3.6"
   }

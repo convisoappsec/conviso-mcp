@@ -16,7 +16,7 @@ console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
 const server = new McpServer({
   name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.3.0',
+  version: pkg.version || '0.3.2',
 });
 
 function sanitizeError(err, message = 'Request failed') {
@@ -135,10 +135,11 @@ server.registerTool(
   {
     description: 'List vulnerabilities for a company or project.',
     inputSchema: z.object({
-      company_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      project_id: z.number().optional(),
+        company_id: z.number(),
+        page: z.number().optional(),
+        limit: z.number().optional(),
+        project_id: z.number().optional(),
+        search: z.string().optional(),
     }),
     annotations: {
       title: 'List Issues',
@@ -148,11 +149,68 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ company_id, page = 1, limit = 10, project_id }) => {
+  async ({ company_id, page = 1, limit = 10, project_id, search = '' }) => {
     try {
-      return ok(await gateway.get_issues(company_id, '', page, limit, project_id));
+      return ok(await gateway.get_issues(company_id, search, page, limit, project_id));
     } catch (err) {
       return fail(err, 'Failed to list issues');
+    }
+  }
+);
+
+server.registerTool(
+  'get_issues_by_asset_id',
+  {
+    description: 'List vulnerabilities for a company filtered by a single asset ID. Supports pagination.',
+    inputSchema: z.object({
+      company_id: z.number(),
+      asset_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+    }),
+    annotations: {
+      title: 'List Issues by Asset ID',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  async ({ company_id, asset_id, page = 1, limit = 10, search = '' }) => {
+    try {
+      const asset_ids = Array.isArray(asset_id) ? asset_id : [asset_id];
+      return ok(await gateway.get_issues_by_asset_ids(company_id, page, limit, asset_ids, search));
+    } catch (err) {
+      return fail(err, 'Failed to list issues by asset id');
+    }
+  }
+);
+
+server.registerTool(
+  'get_issues_by_project_id',
+  {
+    description: 'List vulnerabilities for a company filtered by a project ID. Supports pagination and optional title search.',
+    inputSchema: z.object({
+      company_id: z.number(),
+      project_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+    }),
+    annotations: {
+      title: 'List Issues by Project ID',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  async ({ company_id, project_id, page = 1, limit = 10, search = '' }) => {
+    try {
+      return ok(await gateway.get_issues(company_id, search, page, limit, project_id));
+    } catch (err) {
+      return fail(err, 'Failed to list issues by project id');
     }
   }
 );
