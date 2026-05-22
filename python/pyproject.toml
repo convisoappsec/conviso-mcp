@@ -1,6 +1,6 @@
 [project]
 name = "conviso-mcp"
-version = "0.2.0"
+version = "0.3.2"
 description = "MCP Server for Conviso Platform integration"
 requires-python = ">=3.10"
 authors = [
