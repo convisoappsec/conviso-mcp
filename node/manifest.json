@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Expose Conviso Platform data (companies, projects, issues, assets, metrics) to MCP clients.",
   "long_description": "This MCP server provides tools to query companies, projects, issues, assets and risk metrics from the Conviso Platform.",
   "author": {
@@ -46,12 +46,20 @@
       "description": "Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets."
     },
     {
+      "name": "get_issues_by_project_id",
+      "description": "List vulnerabilities for a company filtered by a project ID. Supports pagination and optional title search."
+    },
+    {
       "name": "get_top_vulnerabilities",
       "description": "Return a summary of vulnerability counts grouped by severity for a given company (risk overview)."
     },
     {
       "name": "get_projects",
       "description": "Return a paginated list of active security projects for a company. Defaults to 25 results per page to conserve tokens."
+    },
+    {
+      "name": "get_issues_by_asset_id",
+      "description": "List vulnerabilities for a company filtered by a single asset ID. Supports pagination."
     },
     {
       "name": "get_project",

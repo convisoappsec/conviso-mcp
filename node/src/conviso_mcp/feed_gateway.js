@@ -28,8 +28,8 @@ class FeedGateway {
     return this.graphql.get_issues(company_id, '', 1, 5, null, [issue_id]);
   }
 
-  async get_issues_by_asset_ids(company_id, page = 1, limit = 1, asset_ids = []) {
-    return this.graphql.get_issues(company_id, '', page, limit, null, [], asset_ids);
+  async get_issues_by_asset_ids(company_id, page = 1, limit = 1, asset_ids = [], search = '') {
+    return this.graphql.get_issues(company_id, search, page, limit, null, [], asset_ids);
   }
 
   async get_projects(company_id, page = 1, limit = 1000, search = '') {
