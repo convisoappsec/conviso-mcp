@@ -1,0 +1,19 @@
+name: Application Security Testing
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  conviso-ast:
+    name: Conviso AST
+    runs-on: ubuntu-latest
+    container:
+      image: convisoappsec/convisoast
+      env:
+        CONVISO_API_KEY: ${{secrets.CONVISO_API_KEY}}
+        CONVISO_COMPANY_ID: 11
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run AST
+        run: conviso ast run --vulnerability-auto-close
