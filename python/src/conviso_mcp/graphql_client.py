@@ -281,46 +281,52 @@ class GraphQLClient:
         }
         return self.execute(query, variables)
 
-    def get_projects(self, company_id: int, page: int = 1, limit: int = 1000, search: str = "") -> Dict[str, Any]:
-        query = """
-        query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
-            projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
-                collection {
-                    id
+    PROJECTS_QUERY = """
+    query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
+        projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
+            collection {
+                id
+                label
+                status
+                createdAt
+                startDate
+                endDate
+                allocatedAnalyst {
+                    portalUser {
+                        name
+                    }
+                }
+                projectType {
                     label
-                    status
-                    createdAt
-                    startDate
-                    endDate
-                    allocatedAnalyst {
-                        portalUser {
-                            name
-                        }
-                    }
-                    projectType {
-                        label
-                    }
+                }
 
-                    company {
-                        id
-                    }
+                company {
+                    id
                 }
             }
         }
-        """
-        variables = {
-            "page": page,
-            "limit": limit,
-            "params": {
-                "scopeIdEq" : company_id,
-                "labelCont" : search
-                #"projectStatusLabelEq": "Fixing"
-            },
-            "sortBy": "createdAt",
-            "descending": True
-        }
-        return self.execute(query, variables)
-    
+    }
+    """
+
+    @staticmethod
+    def build_projects_variables(company_id, page=1, limit=1000, *, search=None, statuses=None,
+                                 project_types=None, created_after=None, created_before=None,
+                                 tags=None, analyst_emails=None, sort_by="createdAt", descending=True):
+        params = filters.prune({
+            "scopeIdEq": company_id,
+            "labelCont": search,
+            "projectStatusLabelIn": statuses or [],
+            "projectTypeLabelIn": project_types or [],
+            "createdAtGteq": created_after,
+            "createdAtLteq": created_before,
+            "tags": tags or [],
+            "analystsEmailIn": analyst_emails or [],
+        })
+        return {"page": page, "limit": limit, "params": params, "sortBy": sort_by, "descending": descending}
+
+    def get_projects(self, company_id, page=1, limit=1000, search=None, **kw) -> Dict[str, Any]:
+        return self.execute(self.PROJECTS_QUERY, self.build_projects_variables(company_id, page, limit, search=search, **kw))
+
     def get_project_by_id(self, project_id: str) -> Dict[str, Any]:
         query = """
         query GetProject($id: ID!) {

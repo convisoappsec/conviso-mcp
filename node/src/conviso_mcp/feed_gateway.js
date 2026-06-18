@@ -43,8 +43,8 @@ class FeedGateway {
     });
   }
 
-  async get_projects(company_id, page = 1, limit = 1000, search = '') {
-    return this.graphql.get_projects(company_id, page, limit, search);
+  async get_projects(company_id, page = 1, limit = 1000, search = '', opts = {}) {
+    return this.graphql.get_projects(company_id, page, limit, search, opts);
   }
 
   async get_project_by_id(project_id) {

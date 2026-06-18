@@ -260,6 +260,51 @@ export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {})
   return { companyId, page, limit, search: s };
 }
 
+const PROJECTS_QUERY = `
+    query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
+        projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
+            collection {
+                id
+                label
+                status
+                createdAt
+                startDate
+                endDate
+                allocatedAnalyst {
+                    portalUser {
+                        name
+                    }
+                }
+                projectType {
+                    label
+                }
+
+                company {
+                    id
+                }
+            }
+        }
+    }
+`;
+
+export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts = {}) {
+  const {
+    search, statuses, projectTypes, createdAfter, createdBefore, tags, analystEmails,
+    sortBy = 'createdAt', descending = true,
+  } = opts;
+  const params = F.prune({
+    scopeIdEq: companyId,
+    labelCont: search,
+    projectStatusLabelIn: statuses || [],
+    projectTypeLabelIn: projectTypes || [],
+    createdAtGteq: createdAfter,
+    createdAtLteq: createdBefore,
+    tags: tags || [],
+    analystsEmailIn: analystEmails || [],
+  });
+  return { page, limit, params, sortBy, descending };
+}
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -354,41 +399,9 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_projects(company_id, page = 1, limit = 1000, search = '') {
-    const query = `
-        query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
-            projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
-                collection {
-                    id
-                    label
-                    status
-                    createdAt
-                    startDate
-                    endDate
-                    allocatedAnalyst {
-                        portalUser {
-                            name
-                        }
-                    }
-                    projectType {
-                        label
-                    }
-
-                    company {
-                        id
-                    }
-                }
-            }
-        }
-        `;
-    const variables = {
-      page,
-      limit,
-      params: { scopeIdEq: company_id, labelCont: search },
-      sortBy: 'createdAt',
-      descending: true
-    };
-    return this.execute(query, variables);
+  async get_projects(company_id, page = 1, limit = 1000, search = '', opts = {}) {
+    const variables = buildProjectsVariables(company_id, page, limit, { search, ...opts });
+    return this.execute(PROJECTS_QUERY, variables);
   }
 
   async get_project_by_id(project_id) {

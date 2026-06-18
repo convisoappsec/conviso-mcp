@@ -76,9 +76,26 @@ def get_top_vulnerabilities(company_id: int):
     return gateway.get_top_vulnerabilities(company_id)
 
 @mcp.tool()
-def get_projects(company_id: int, page: int, limit: int, search: str):
-    """Get project list in Conviso Platform by company ID."""
-    return gateway.get_projects(company_id, page=page, limit=limit, search=search)
+def get_projects(company_id: int, page: int = 1, limit: int = 1000, search: str = "",
+                 statuses: list = None, project_types: list = None, created_after: str = None,
+                 created_before: str = None, tags: list = None, analyst_emails: list = None,
+                 sort_by: str = "createdAt", descending: bool = True):
+    """Get project list in Conviso Platform by company ID, with filtering and sorting.
+
+    Filters (all optional):
+    - search: substring match on project label.
+    - statuses: platform status labels (free text, e.g. "Fixing"), not an enum.
+    - project_types: platform project type labels (free text, e.g. "Pentest"), not an enum.
+    - created_after / created_before: ISO8601 dates (YYYY-MM-DD) bounding createdAt.
+    - tags: list of project tags.
+    - analyst_emails: list of allocated analyst emails.
+    - sort_by: field to sort by (default "createdAt"). descending: sort direction (default True).
+    """
+    return gateway.get_projects(company_id, page=page, limit=limit, search=search,
+                                statuses=statuses, project_types=project_types,
+                                created_after=created_after, created_before=created_before,
+                                tags=tags, analyst_emails=analyst_emails, sort_by=sort_by,
+                                descending=descending)
 
 @mcp.tool()
 def get_project(project_id: int):

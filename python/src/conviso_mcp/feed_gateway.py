@@ -48,9 +48,14 @@ class FeedGateway:
         return self.graphql.get_issues(company_id, search=search, page=page, limit=limit,
                                         asset_ids=asset_ids or [], **kw)
 
-    def get_projects(self, company_id: int, page: int = 1, limit: int = 1000, search: str = ""):
-        projects = self.graphql.get_projects(company_id, page=page, limit=limit, search=search)
-        return projects
+    def get_projects(self, company_id: int, page: int = 1, limit: int = 1000, search=None,
+                     statuses=None, project_types=None, created_after=None, created_before=None,
+                     tags=None, analyst_emails=None, sort_by="createdAt", descending=True):
+        return self.graphql.get_projects(
+            company_id, page=page, limit=limit, search=search, statuses=statuses,
+            project_types=project_types, created_after=created_after, created_before=created_before,
+            tags=tags, analyst_emails=analyst_emails, sort_by=sort_by, descending=descending,
+        )
     
     def get_project_by_id(self, project_id: int):
         projects = self.graphql.get_project_by_id(project_id)

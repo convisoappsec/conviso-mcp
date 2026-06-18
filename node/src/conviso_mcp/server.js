@@ -372,12 +372,29 @@ server.registerTool(
 server.registerTool(
   'get_projects',
   {
-    description: 'Return a paginated list of active security projects for a company. Defaults to 25 results per page to conserve tokens.',
+    description: `Return a paginated list of security projects for a company, with filtering and sorting. Defaults to 25 results per page to conserve tokens.
+
+Filters (all optional):
+- search: substring match on project label.
+- statuses: platform status labels (free text, e.g. "Fixing"), not an enum.
+- project_types: platform project type labels (free text, e.g. "Pentest"), not an enum.
+- created_after / created_before: ISO8601 dates (YYYY-MM-DD) bounding createdAt.
+- tags: list of project tags.
+- analyst_emails: list of allocated analyst emails.
+- sort_by: field to sort by (default "createdAt"). descending: sort direction (default true).`,
     inputSchema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
       search: z.string().optional(),
+      statuses: z.array(z.string()).optional(),
+      project_types: z.array(z.string()).optional(),
+      created_after: z.string().optional(),
+      created_before: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      analyst_emails: z.array(z.string()).optional(),
+      sort_by: z.string().optional(),
+      descending: z.boolean().optional(),
     }),
     annotations: {
       title: 'List Projects',
@@ -387,9 +404,22 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ company_id, page = 1, limit = 25, search = '' }) => {
+  async ({
+    company_id, page = 1, limit = 25, search = '', statuses, project_types,
+    created_after, created_before, tags, analyst_emails, sort_by = 'createdAt',
+    descending = true,
+  }) => {
     try {
-      return ok(await gateway.get_projects(company_id, page, limit, search));
+      return ok(await gateway.get_projects(company_id, page, limit, search, {
+        statuses,
+        projectTypes: project_types,
+        createdAfter: created_after,
+        createdBefore: created_before,
+        tags,
+        analystEmails: analyst_emails,
+        sortBy: sort_by,
+        descending,
+      }));
     } catch (err) {
       return fail(err, 'Failed to list projects');
     }
