@@ -37,3 +37,7 @@ test('buildIssueSortOptions', () => {
 test('prune drops empty', () => {
   assert.deepEqual(f.prune({ a: 1, b: null, c: [], d: '', e: {}, f: [1] }), { a: 1, f: [1] });
 });
+
+test('prune keeps falsy-but-valid values', () => {
+  assert.deepEqual(f.prune({ a: 0, b: false, c: null, d: '' }), { a: 0, b: false });
+});

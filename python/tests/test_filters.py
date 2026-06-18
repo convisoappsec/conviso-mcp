@@ -37,3 +37,7 @@ def test_build_issue_sort_options():
 
 def test_prune_drops_empty():
     assert f.prune({"a": 1, "b": None, "c": [], "d": "", "e": {}, "f": [1]}) == {"a": 1, "f": [1]}
+
+
+def test_prune_keeps_falsy_valid():
+    assert f.prune({"a": 0, "b": False, "c": None, "d": ""}) == {"a": 0, "b": False}
