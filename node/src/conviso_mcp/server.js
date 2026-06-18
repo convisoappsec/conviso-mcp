@@ -133,13 +133,41 @@ server.registerTool(
 server.registerTool(
   'get_issues',
   {
-    description: 'List vulnerabilities for a company or project.',
+    description: `Get issues (vulnerabilities) for a company, with rich filtering and sorting.
+
+Filters (all optional):
+- search: substring match on issue title.
+- severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
+- statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
+  FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
+- sla_states: any of ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED.
+- created_after / created_before: ISO8601 dates (YYYY-MM-DD). For relative ranges
+  ("last 30 days") call get_today_date first and compute the bounds.
+- assignee_emails: list of assignee emails.
+- project_id: restrict to one project. asset filtering: use get_issues_by_asset_id.
+- sort_by: one of RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT. order: ASC or DESC.
+- extra_filters: dict mapping directly to IssuesFiltersInput for advanced keys, e.g.
+  {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
+   "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
+   "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
+
+Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
+asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.`,
     inputSchema: z.object({
         company_id: z.number(),
         page: z.number().optional(),
         limit: z.number().optional(),
         project_id: z.number().optional(),
         search: z.string().optional(),
+        severities: z.array(z.string()).optional(),
+        statuses: z.array(z.string()).optional(),
+        sla_states: z.array(z.string()).optional(),
+        created_after: z.string().optional(),
+        created_before: z.string().optional(),
+        assignee_emails: z.array(z.string()).optional(),
+        sort_by: z.string().optional(),
+        order: z.string().optional(),
+        extra_filters: z.record(z.string(), z.any()).optional(),
     }),
     annotations: {
       title: 'List Issues',
@@ -149,9 +177,27 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ company_id, page = 1, limit = 10, project_id, search = '' }) => {
+  async ({
+    company_id, page = 1, limit = 10, project_id, search = '',
+    severities, statuses, sla_states, created_after, created_before,
+    assignee_emails, sort_by, order = 'DESC', extra_filters,
+  }) => {
     try {
-      return ok(await gateway.get_issues(company_id, search, page, limit, project_id));
+      return ok(await gateway.getIssues(company_id, {
+        page,
+        limit,
+        projectId: project_id,
+        search,
+        severities,
+        statuses,
+        slaStates: sla_states,
+        createdAfter: created_after,
+        createdBefore: created_before,
+        assigneeEmails: assignee_emails,
+        sortBy: sort_by,
+        order,
+        extraFilters: extra_filters,
+      }));
     } catch (err) {
       return fail(err, 'Failed to list issues');
     }

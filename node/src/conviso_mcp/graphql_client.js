@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as F from './filters.js';
 
 const GraphQLFieldTemplates = {
   complete_issue: `
@@ -162,6 +163,55 @@ GraphQLFieldTemplates.complete_issue_with_snippet = `
     }
 `;
 
+export const ISSUES_QUERY = `
+  query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput, $sortOptions: [IssueSortOptionInput!]) {
+    issues(companyId: $companyId, pagination: $pagination, filters: $filters, sortOptions: $sortOptions) {
+      collection {
+        id
+        title
+        severity
+        status
+        createdAt
+        updatedAt
+        sla { state dueAt daysRemaining }
+        assignedUsers { name email }
+        asset { id name }
+        project { id label company { id } }
+      }
+      metadata { totalCount totalPages currentPage limitValue }
+    }
+  }
+`;
+
+export function buildIssuesVariables(companyId, page = 1, limit = 10, opts = {}) {
+  const {
+    severities, statuses, slaStates, createdAfter, createdBefore, assigneeEmails,
+    search, projectId, assetIds, issueIds, sortBy, order, extraFilters,
+  } = opts;
+  let built = F.prune({
+    severities: F.normalizeEnumList(severities, F.SEVERITIES),
+    statuses: F.normalizeEnumList(statuses, F.ISSUE_STATUSES),
+    slaStates: F.normalizeEnumList(slaStates, F.SLA_STATES),
+    createdAtRange: F.buildDateRange(createdAfter, createdBefore),
+    assigneeEmails: assigneeEmails || [],
+    partialTitle: search,
+    projectIds: (projectId !== undefined && projectId !== null && projectId !== 0) ? [projectId] : [],
+    assetIds: assetIds || [],
+    ids: issueIds || [],
+  });
+  if (extraFilters) {
+    for (const [k, val] of Object.entries(extraFilters)) {
+      if (val !== null && val !== undefined) built[k] = val;
+    }
+  }
+  return {
+    companyId,
+    pagination: { page, perPage: limit },
+    filters: built,
+    sortOptions: F.buildIssueSortOptions(sortBy, order),
+  };
+}
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -211,45 +261,21 @@ class GraphQLClient {
     return response.data.data;
   }
 
+  async getIssues(companyId, opts = {}) {
+    const variables = buildIssuesVariables(companyId, opts.page || 1, opts.limit || 10, opts);
+    return this.execute(ISSUES_QUERY, variables);
+  }
+
+  // Backward-compatible positional-argument wrapper used by existing FeedGateway callers.
   async get_issues(company_id, search, page = 1, limit = 1, project_id = null, issue_ids = [], asset_ids = []) {
-    const query = `
-        query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput) {
-            issues(companyId: $companyId,  pagination: $pagination, filters: $filters) {
-                collection {
-                    id
-                    title
-                    severity
-                    project {
-                        company {
-                            id
-                        }
-                    }
-
-                    asset {
-                        id
-                    }
-                }
-            }
-        }
-        `;
-
-    const variables = {
-      companyId: company_id,
-      filters: { title: search },
-      pagination: { page: page, perPage: limit }
-    };
-
-    if (project_id !== null && project_id !== 0) {
-      variables.filters.projectIds = [project_id];
-    }
-    if (Array.isArray(issue_ids) && issue_ids.length > 0) {
-      variables.filters.ids = issue_ids;
-    }
-    if (Array.isArray(asset_ids) && asset_ids.length > 0) {
-      variables.filters.assetIds = asset_ids;
-    }
-
-    return this.execute(query, variables);
+    return this.getIssues(company_id, {
+      page,
+      limit,
+      search,
+      projectId: project_id,
+      issueIds: issue_ids,
+      assetIds: asset_ids,
+    });
   }
 
   async get_issue_by_id(issue_id, return_snippets = false) {
