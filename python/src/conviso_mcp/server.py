@@ -156,10 +156,35 @@ def get_issues_by_project_id(company_id: int, project_id: int, page: int = 1, li
                               extra_filters=extra_filters)
 
 @mcp.tool()
-def get_assets(company_id: int, page: int, limit: int):
-    """Get assets list in Conviso Platform by company ID."""
-    projects = gateway.get_assets(company_id, page=page, limit=limit)
-    return projects
+def get_assets(company_id: int, page: int = 1, limit: int = 25, name: str = None,
+                search: str = None, tags: list = None, technology: list = None,
+                business_impact: list = None, exploitability: list = None,
+                asset_type: str = None, environment_compromised: bool = None,
+                covered_by_scan: bool = None, sort_by: str = None, order: str = None,
+                extra_filters: dict = None):
+    """Get assets list in Conviso Platform by company ID, with rich filtering and sorting.
+
+    Filters (all optional):
+    - name / search: substring match on asset name.
+    - tags: list of asset tags.
+    - technology: list of technologies.
+    - business_impact: any of LOW, MEDIUM, HIGH, NOT_DEFINED.
+    - exploitability: any of INTERNET_FACING, INTERNAL, NOT_DEFINED.
+    - asset_type: asset type filter.
+    - environment_compromised: boolean filter for compromised environment.
+    - covered_by_scan: boolean filter for scan coverage.
+    - sort_by: one of updated_at, name, business_impact, risk_score. order: ASC or DESC.
+    - extra_filters: dict mapping directly to AssetsSearch for advanced keys.
+
+    Returns asset collection (id, name, assetType, environment, audience, dates, riskScore)
+    plus metadata (totalCount, totalPages, currentPage) for pagination.
+    """
+    return gateway.get_assets(company_id, page=page, limit=limit, name=name, search=search,
+                              tags=tags, technology=technology, business_impact=business_impact,
+                              exploitability=exploitability, asset_type=asset_type,
+                              environment_compromised=environment_compromised,
+                              covered_by_scan=covered_by_scan, sort_by=sort_by, order=order,
+                              extra_filters=extra_filters)
 
 @mcp.tool()
 def create_project_url(company_id: int, project_id: int):

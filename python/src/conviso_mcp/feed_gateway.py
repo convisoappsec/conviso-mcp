@@ -56,8 +56,17 @@ class FeedGateway:
         projects = self.graphql.get_project_by_id(project_id)
         return projects
     
-    def get_assets(self, company_id: int, page: int = 1, limit: int = 1000):
-        return self.graphql.get_assets_by_company(company_id=company_id, page=page, limit=limit)
+    def get_assets(self, company_id: int, page: int = 1, limit: int = 1000, name=None,
+                   search=None, tags=None, technology=None, business_impact=None,
+                   exploitability=None, asset_type=None, environment_compromised=None,
+                   covered_by_scan=None, sort_by=None, order=None, extra_filters=None):
+        return self.graphql.get_assets_by_company(
+            company_id=company_id, page=page, limit=limit, name=name, search=search,
+            tags=tags, technology=technology, business_impact=business_impact,
+            exploitability=exploitability, asset_type=asset_type,
+            environment_compromised=environment_compromised, covered_by_scan=covered_by_scan,
+            sort_by=sort_by, order=order, extra_filters=extra_filters,
+        )
     
     def get_asset_by_id(self, asset_id: int):
         return self.graphql.get_asset_by_id(asset_id=asset_id)

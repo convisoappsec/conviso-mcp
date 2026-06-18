@@ -412,35 +412,52 @@ class GraphQLClient:
         variables = {"id": asset_id}
         return self.execute(query, variables)
 
-    def get_assets_by_company(self, company_id: str, page: int = 1, limit: int = 10) -> Dict[str, Any]:
-        query = """
-        query ListAssets($companyId: ID!, $page: Int, $limit: Int) {
-            assets(companyId: $companyId, page: $page, limit: $limit) {
-                collection {
-                    id
-                    name
-                    assetType
-                    environment
-                    audience
-                    createdAt
-                    updatedAt
-                }
-                metadata {
-                    totalCount
-                    totalPages
-                    currentPage
-                    limitValue
-                }
+    ASSETS_QUERY = """
+    query ListAssets($companyId: ID!, $page: Int, $limit: Int, $search: AssetsSearch) {
+        assets(companyId: $companyId, page: $page, limit: $limit, search: $search) {
+            collection {
+                id
+                name
+                assetType
+                environment
+                audience
+                createdAt
+                updatedAt
+                riskScore { current { value } }
             }
+            metadata { totalCount totalPages currentPage limitValue }
         }
-        """
-        variables = {
-            "companyId": company_id,
-            "page": page,
-            "limit": limit
-        }
-        return self.execute(query, variables)
-    
+    }
+    """
+
+    @staticmethod
+    def build_assets_variables(company_id, page=1, limit=10, *, name=None, search=None,
+                               tags=None, technology=None, business_impact=None,
+                               exploitability=None, asset_type=None, environment_compromised=None,
+                               covered_by_scan=None, sort_by=None, order=None, extra_filters=None):
+        f = filters
+        s = f.prune({
+            "name": name,
+            "search": search,
+            "tags": tags or [],
+            "technology": technology or [],
+            "businessImpact": f.normalize_enum_list(business_impact, f.BUSINESS_IMPACT),
+            "exploitability": f.normalize_enum_list(exploitability, f.EXPLOITABILITY),
+            "assetType": asset_type,
+            "sortBy": f.normalize_enum(sort_by, f.ASSET_SORT_BY, upper=False),
+            "order": f.normalize_enum(order, f.ORDER),
+        })
+        if environment_compromised is not None:
+            s["environmentCompromised"] = environment_compromised
+        if covered_by_scan is not None:
+            s["coveredByScan"] = covered_by_scan
+        if extra_filters:
+            s.update({k: v for k, v in extra_filters.items() if v is not None})
+        return {"companyId": company_id, "page": page, "limit": limit, "search": s}
+
+    def get_assets_by_company(self, company_id, page=1, limit=10, **kw):
+        return self.execute(self.ASSETS_QUERY, self.build_assets_variables(company_id, page, limit, **kw))
+
 
     def list_allocated_analyses(self, page: int = 1, limit: int = 10) -> Dict[str, Any]:
         query = """

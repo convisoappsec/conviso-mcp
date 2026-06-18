@@ -212,6 +212,54 @@ export function buildIssuesVariables(companyId, page = 1, limit = 10, opts = {})
   };
 }
 
+export const ASSETS_QUERY = `
+  query ListAssets($companyId: ID!, $page: Int, $limit: Int, $search: AssetsSearch) {
+    assets(companyId: $companyId, page: $page, limit: $limit, search: $search) {
+      collection {
+        id
+        name
+        assetType
+        environment
+        audience
+        createdAt
+        updatedAt
+        riskScore { current { value } }
+      }
+      metadata { totalCount totalPages currentPage limitValue }
+    }
+  }
+`;
+
+export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {}) {
+  const {
+    name, search, tags, technology, businessImpact, exploitability, assetType,
+    environmentCompromised, coveredByScan, sortBy, order, extraFilters,
+  } = opts;
+  const s = F.prune({
+    name,
+    search,
+    tags: tags || [],
+    technology: technology || [],
+    businessImpact: F.normalizeEnumList(businessImpact, F.BUSINESS_IMPACT),
+    exploitability: F.normalizeEnumList(exploitability, F.EXPLOITABILITY),
+    assetType,
+    sortBy: F.normalizeEnum(sortBy, F.ASSET_SORT_BY, false),
+    order: F.normalizeEnum(order, F.ORDER),
+  });
+  if (environmentCompromised !== null && environmentCompromised !== undefined) {
+    s.environmentCompromised = environmentCompromised;
+  }
+  if (coveredByScan !== null && coveredByScan !== undefined) {
+    s.coveredByScan = coveredByScan;
+  }
+  if (extraFilters) {
+    for (const [k, val] of Object.entries(extraFilters)) {
+      if (val !== null && val !== undefined) s[k] = val;
+    }
+  }
+  return { companyId, page, limit, search: s };
+}
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -382,30 +430,9 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_assets_by_company(company_id, page = 1, limit = 10) {
-    const query = `
-        query ListAssets($companyId: ID!, $page: Int, $limit: Int) {
-            assets(companyId: $companyId, page: $page, limit: $limit) {
-                collection {
-                    id
-                    name
-                    assetType
-                    environment
-                    audience
-                    createdAt
-                    updatedAt
-                }
-                metadata {
-                    totalCount
-                    totalPages
-                    currentPage
-                    limitValue
-                }
-            }
-        }
-        `;
-    const variables = { companyId: company_id, page, limit };
-    return this.execute(query, variables);
+  async get_assets_by_company(company_id, page = 1, limit = 10, opts = {}) {
+    const variables = buildAssetsVariables(company_id, page, limit, opts);
+    return this.execute(ASSETS_QUERY, variables);
   }
 
   async get_asset_by_id(asset_id) {

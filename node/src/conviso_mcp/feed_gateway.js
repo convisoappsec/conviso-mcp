@@ -51,8 +51,8 @@ class FeedGateway {
     return this.graphql.get_project_by_id(project_id);
   }
 
-  async get_assets(company_id, page = 1, limit = 1000) {
-    return this.graphql.get_assets_by_company(company_id, page, limit);
+  async get_assets(company_id, page = 1, limit = 1000, opts = {}) {
+    return this.graphql.get_assets_by_company(company_id, page, limit, opts);
   }
 
   async get_asset_by_id(asset_id) {

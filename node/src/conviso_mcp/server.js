@@ -443,11 +443,38 @@ server.registerTool(
 server.registerTool(
   'get_assets',
   {
-    description: 'Return a paginated list of assets for a company. Defaults to 25 results per page to reduce token usage.',
+    description: `Return a paginated list of assets for a company, with rich filtering and sorting. Defaults to 25 results per page to reduce token usage.
+
+Filters (all optional):
+- name / search: substring match on asset name.
+- tags: list of asset tags.
+- technology: list of technologies.
+- business_impact: any of LOW, MEDIUM, HIGH, NOT_DEFINED.
+- exploitability: any of INTERNET_FACING, INTERNAL, NOT_DEFINED.
+- asset_type: asset type filter.
+- environment_compromised: boolean filter for compromised environment.
+- covered_by_scan: boolean filter for scan coverage.
+- sort_by: one of updated_at, name, business_impact, risk_score. order: ASC or DESC.
+- extra_filters: object mapping directly to AssetsSearch for advanced keys.
+
+Returns asset collection (id, name, assetType, environment, audience, dates, riskScore)
+plus metadata (totalCount, totalPages, currentPage) for pagination.`,
     inputSchema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
+      name: z.string().optional(),
+      search: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      technology: z.array(z.string()).optional(),
+      business_impact: z.array(z.string()).optional(),
+      exploitability: z.array(z.string()).optional(),
+      asset_type: z.string().optional(),
+      environment_compromised: z.boolean().optional(),
+      covered_by_scan: z.boolean().optional(),
+      sort_by: z.string().optional(),
+      order: z.string().optional(),
+      extra_filters: z.record(z.string(), z.any()).optional(),
     }),
     annotations: {
       title: 'List Assets',
@@ -457,9 +484,26 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ company_id, page = 1, limit = 25 }) => {
+  async ({
+    company_id, page = 1, limit = 25, name, search, tags, technology,
+    business_impact, exploitability, asset_type, environment_compromised,
+    covered_by_scan, sort_by, order, extra_filters,
+  }) => {
     try {
-      return ok(await gateway.get_assets(company_id, page, limit));
+      return ok(await gateway.get_assets(company_id, page, limit, {
+        name,
+        search,
+        tags,
+        technology,
+        businessImpact: business_impact,
+        exploitability,
+        assetType: asset_type,
+        environmentCompromised: environment_compromised,
+        coveredByScan: covered_by_scan,
+        sortBy: sort_by,
+        order,
+        extraFilters: extra_filters,
+      }));
     } catch (err) {
       return fail(err, 'Failed to list assets');
     }
