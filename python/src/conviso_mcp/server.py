@@ -38,9 +38,37 @@ def get_issue(id: int, return_vulnerable_data: bool = False):
     return gateway.get_issue_by_id(id, return_snippets=return_vulnerable_data)
 
 @mcp.tool()
-def get_issues(company_id: int, page: int = 1, limit: int = 10, project_id: int = None, search: str = ""):
-    """Get issues list in Conviso Platform by company ID. Project ID is optional. Supports optional title search via `search`."""
-    return gateway.get_issues(company_id, search=search, page=page, limit=limit, project_id=project_id)
+def get_issues(company_id: int, page: int = 1, limit: int = 10, project_id: int = None,
+               search: str = "", severities: list = None, statuses: list = None,
+               sla_states: list = None, created_after: str = None, created_before: str = None,
+               assignee_emails: list = None, sort_by: str = None, order: str = "DESC",
+               extra_filters: dict = None):
+    """Get issues (vulnerabilities) for a company, with rich filtering and sorting.
+
+    Filters (all optional):
+    - search: substring match on issue title.
+    - severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
+    - statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
+      FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
+    - sla_states: any of ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED.
+    - created_after / created_before: ISO8601 dates (YYYY-MM-DD). For relative ranges
+      ("last 30 days") call get_today_date first and compute the bounds.
+    - assignee_emails: list of assignee emails.
+    - project_id: restrict to one project. asset filtering: use get_issues_by_asset_id.
+    - sort_by: one of RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT. order: ASC or DESC.
+    - extra_filters: dict mapping directly to IssuesFiltersInput for advanced keys, e.g.
+      {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
+       "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
+       "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
+
+    Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
+    asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.
+    """
+    return gateway.get_issues(company_id, search=search, page=page, limit=limit,
+                              project_id=project_id, severities=severities, statuses=statuses,
+                              sla_states=sla_states, created_after=created_after,
+                              created_before=created_before, assignee_emails=assignee_emails,
+                              sort_by=sort_by, order=order, extra_filters=extra_filters)
 
 @mcp.tool()
 def get_top_vulnerabilities(company_id: int):

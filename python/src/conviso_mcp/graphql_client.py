@@ -1,4 +1,5 @@
 import requests
+import filters
 from typing import Optional, Dict, Any
 
 class GraphQLFieldTemplates:
@@ -182,50 +183,66 @@ class GraphQLClient:
 
         return result["data"]
 
-    def get_issues(self, company_id: str, search: str, page: int = 1, limit: int = 1, project_id: int = None, issue_ids: list = [], asset_ids = []) -> Dict[str, Any]:
-        query = """
-        query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput) {
-            issues(companyId: $companyId,  pagination: $pagination, filters: $filters) {
-                collection {
-                    id
-                    title
-                    severity
-                    project {
-                        company {
-                            id
-                        }
-                    }
-
-                    asset {
-                        id
-                    }
-                }
+    ISSUES_QUERY = """
+    query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput, $sortOptions: [IssueSortOptionInput!]) {
+        issues(companyId: $companyId, pagination: $pagination, filters: $filters, sortOptions: $sortOptions) {
+            collection {
+                id
+                title
+                severity
+                status
+                createdAt
+                updatedAt
+                sla { state dueAt daysRemaining }
+                assignedUsers { name email }
+                asset { id name }
+                project { id label company { id } }
             }
+            metadata { totalCount totalPages currentPage limitValue }
         }
-        """
-        variables = {
+    }
+    """
+
+    @staticmethod
+    def build_issues_variables(company_id, page=1, limit=10, *, severities=None, statuses=None,
+                               sla_states=None, created_after=None, created_before=None,
+                               assignee_emails=None, search=None, project_id=None,
+                               asset_ids=None, issue_ids=None, sort_by=None, order=None,
+                               extra_filters=None):
+        f = filters
+        built = {
+            "severities": f.normalize_enum_list(severities, f.SEVERITIES),
+            "statuses": f.normalize_enum_list(statuses, f.ISSUE_STATUSES),
+            "slaStates": f.normalize_enum_list(sla_states, f.SLA_STATES),
+            "createdAtRange": f.build_date_range(created_after, created_before),
+            "assigneeEmails": assignee_emails or [],
+            "partialTitle": search,
+            "projectIds": [project_id] if project_id not in (None, 0) else [],
+            "assetIds": asset_ids or [],
+            "ids": issue_ids or [],
+        }
+        built = f.prune(built)
+        if extra_filters:
+            built.update({k: v for k, v in extra_filters.items() if v is not None})
+        return {
             "companyId": company_id,
-            "filters": {
-                "title" : search 
-            },
-            "pagination" : {
-                "page" : page,
-                "perPage" : limit
-            }
+            "pagination": {"page": page, "perPage": limit},
+            "filters": built,
+            "sortOptions": f.build_issue_sort_options(sort_by, order),
         }
 
-        if project_id is not None and project_id != 0:
-            variables["filters"]["projectIds"] = [
-                project_id
-            ]
-
-        if len(issue_ids) > 0:
-            variables["filters"]["ids"] = issue_ids
-
-        if len(asset_ids) > 0:
-            variables["filters"]["assetIds"] = asset_ids
-
-        return self.execute(query, variables)
+    def get_issues(self, company_id, search=None, page=1, limit=10, project_id=None,
+                   issue_ids=None, asset_ids=None, severities=None, statuses=None,
+                   sla_states=None, created_after=None, created_before=None,
+                   assignee_emails=None, sort_by=None, order=None, extra_filters=None):
+        variables = self.build_issues_variables(
+            company_id, page, limit, severities=severities, statuses=statuses,
+            sla_states=sla_states, created_after=created_after, created_before=created_before,
+            assignee_emails=assignee_emails, search=search, project_id=project_id,
+            asset_ids=asset_ids, issue_ids=issue_ids, sort_by=sort_by, order=order,
+            extra_filters=extra_filters,
+        )
+        return self.execute(self.ISSUES_QUERY, variables)
 
     def get_issue_by_id(self, issue_id: str, return_snippets: bool = False) -> Dict[str, Any]:
         query = """
