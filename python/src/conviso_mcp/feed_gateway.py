@@ -76,8 +76,13 @@ class FeedGateway:
     def get_asset_by_id(self, asset_id: int):
         return self.graphql.get_asset_by_id(asset_id=asset_id)
     
-    def get_top_vulnerabilities(self, company_id: int):
-        return self.graphql.get_top_vulnerabilities(company_id)
+    def get_top_vulnerabilities(self, company_id: int, severities=None, statuses=None,
+                                asset_ids=None, asset_tags=None, created_after=None,
+                                created_before=None):
+        return self.graphql.get_top_vulnerabilities(
+            company_id, severities=severities, statuses=statuses, asset_ids=asset_ids,
+            asset_tags=asset_tags, created_after=created_after, created_before=created_before,
+        )
     
     def generate_project_report(
         self,

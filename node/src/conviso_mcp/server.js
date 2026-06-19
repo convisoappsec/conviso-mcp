@@ -350,8 +350,21 @@ asset, project) plus metadata (totalCount, totalPages, currentPage) for paginati
 server.registerTool(
   'get_top_vulnerabilities',
   {
-    description: 'Return a summary of vulnerability counts grouped by severity for a given company (risk overview).',
-    inputSchema: z.object({ company_id: z.number() }),
+    description: 'Return a summary of vulnerability counts grouped by severity for a given company (risk overview). '
+      + 'Optional filters (severities, statuses, asset_ids, asset_tags, created_after/created_before) narrow the '
+      + 'overview; when none are set the response is identical to calling with no arguments at all. '
+      + 'severities: NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL. statuses: CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, '
+      + 'AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED. created_after/created_before '
+      + 'are ISO8601 dates (YYYY-MM-DD).',
+    inputSchema: z.object({
+      company_id: z.number(),
+      severities: z.array(z.string()).optional(),
+      statuses: z.array(z.string()).optional(),
+      asset_ids: z.array(z.number()).optional(),
+      asset_tags: z.array(z.string()).optional(),
+      created_after: z.string().optional(),
+      created_before: z.string().optional(),
+    }),
     annotations: {
       title: 'Top Vulnerabilities',
       readOnlyHint: true,
@@ -360,9 +373,16 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ company_id }) => {
+  async ({ company_id, severities, statuses, asset_ids, asset_tags, created_after, created_before }) => {
     try {
-      return ok(await gateway.get_top_vulnerabilities(company_id));
+      return ok(await gateway.get_top_vulnerabilities(company_id, {
+        severities,
+        statuses,
+        assetIds: asset_ids,
+        assetTags: asset_tags,
+        createdAfter: created_after,
+        createdBefore: created_before,
+      }));
     } catch (err) {
       return fail(err, 'Failed to get top vulnerabilities');
     }

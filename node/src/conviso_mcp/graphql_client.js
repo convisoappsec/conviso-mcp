@@ -260,6 +260,22 @@ export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {})
   return { companyId, page, limit, search: s };
 }
 
+export function buildTopVulnsVariables(companyId, opts = {}) {
+  const {
+    severities, statuses, assetIds, assetTags, createdAfter, createdBefore,
+  } = opts;
+  const fl = F.prune({
+    severities: F.normalizeEnumList(severities, F.SEVERITIES),
+    statuses: F.normalizeEnumList(statuses, F.ISSUE_STATUSES),
+    assetIds: assetIds || [],
+    assetTags: assetTags || [],
+    createdAtRange: F.buildDateRange(createdAfter, createdBefore),
+  });
+  const variables = { companyId };
+  if (Object.keys(fl).length) variables.filters = fl;
+  return variables;
+}
+
 const PROJECTS_QUERY = `
     query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
         projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
@@ -478,10 +494,10 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_top_vulnerabilities(company_id) {
+  async get_top_vulnerabilities(company_id, opts = {}) {
     const query = `
-        query TopVulnerabilities($companyId: ID!) {
-            topVulnerabilities(companyId: $companyId) {
+        query TopVulnerabilities($companyId: ID!, $filters: TopVulnerabilitiesFiltersInput) {
+            topVulnerabilities(companyId: $companyId, filters: $filters) {
                 affectedAssetsCount
                 criticalCount
                 highCount
@@ -492,7 +508,7 @@ class GraphQLClient {
             }
         }
         `;
-    const variables = { companyId: company_id };
+    const variables = buildTopVulnsVariables(company_id, opts);
     return this.execute(query, variables);
   }
 

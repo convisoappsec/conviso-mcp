@@ -71,9 +71,27 @@ def get_issues(company_id: int, page: int = 1, limit: int = 10, project_id: int 
                               sort_by=sort_by, order=order, extra_filters=extra_filters)
 
 @mcp.tool()
-def get_top_vulnerabilities(company_id: int):
-    """Get top vulnerabilities by company ID. This is a general overview of the company's top vulnerabilities. It returns data such as: affectedAssetsCount, criticalCount, highCount, lowCount, mediumCount, title, totalCount."""
-    return gateway.get_top_vulnerabilities(company_id)
+def get_top_vulnerabilities(company_id: int, severities: list = None, statuses: list = None,
+                            asset_ids: list = None, asset_tags: list = None,
+                            created_after: str = None, created_before: str = None):
+    """Get top vulnerabilities by company ID. This is a general overview of the company's top
+    vulnerabilities. It returns data such as: affectedAssetsCount, criticalCount, highCount,
+    lowCount, mediumCount, title, totalCount.
+
+    Filters (all optional; when none are set the response is identical to calling with no
+    arguments at all):
+    - severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
+    - statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
+      FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
+    - asset_ids: list of asset IDs to restrict the results to.
+    - asset_tags: list of asset tags to restrict the results to.
+    - created_after / created_before: ISO8601 dates (YYYY-MM-DD) bounding createdAt. For
+      relative ranges ("last 30 days") call get_today_date first and compute the bounds.
+    """
+    return gateway.get_top_vulnerabilities(
+        company_id, severities=severities, statuses=statuses, asset_ids=asset_ids,
+        asset_tags=asset_tags, created_after=created_after, created_before=created_before,
+    )
 
 @mcp.tool()
 def get_projects(company_id: int, page: int = 1, limit: int = 1000, search: str = "",

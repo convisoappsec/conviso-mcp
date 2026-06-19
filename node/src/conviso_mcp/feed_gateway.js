@@ -59,8 +59,8 @@ class FeedGateway {
     return this.graphql.get_asset_by_id(asset_id);
   }
 
-  async get_top_vulnerabilities(company_id) {
-    return this.graphql.get_top_vulnerabilities(company_id);
+  async get_top_vulnerabilities(company_id, opts = {}) {
+    return this.graphql.get_top_vulnerabilities(company_id, opts);
   }
 
   async generate_project_report(project_id, language = 'en', vulnerability_criticity = null, vulnerability_statuses = null, requirements = true, evidences = true) {

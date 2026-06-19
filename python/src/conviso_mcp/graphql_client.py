@@ -495,13 +495,35 @@ class GraphQLClient:
         }
         return self.execute(query, variables)
 
+    @staticmethod
+    def build_top_vulns_variables(company_id, *, severities=None, statuses=None, asset_ids=None,
+                                  asset_tags=None, created_after=None, created_before=None):
+        f = filters
+        fl = f.prune({
+            "severities": f.normalize_enum_list(severities, f.SEVERITIES),
+            "statuses": f.normalize_enum_list(statuses, f.ISSUE_STATUSES),
+            "assetIds": asset_ids or [],
+            "assetTags": asset_tags or [],
+            "createdAtRange": f.build_date_range(created_after, created_before),
+        })
+        variables = {"companyId": company_id}
+        if fl:
+            variables["filters"] = fl
+        return variables
+
     def get_top_vulnerabilities(
         self,
-        company_id: int
+        company_id: int,
+        severities: list = None,
+        statuses: list = None,
+        asset_ids: list = None,
+        asset_tags: list = None,
+        created_after: str = None,
+        created_before: str = None,
     ) -> Dict[str, Any]:
         query = """
-        query TopVulnerabilities($companyId: ID!) {
-            topVulnerabilities(companyId: $companyId) {
+        query TopVulnerabilities($companyId: ID!, $filters: TopVulnerabilitiesFiltersInput) {
+            topVulnerabilities(companyId: $companyId, filters: $filters) {
                 affectedAssetsCount
                 criticalCount
                 highCount
@@ -512,9 +534,10 @@ class GraphQLClient:
             }
         }
         """
-        variables = {
-            "companyId": company_id
-        }
+        variables = self.build_top_vulns_variables(
+            company_id, severities=severities, statuses=statuses, asset_ids=asset_ids,
+            asset_tags=asset_tags, created_after=created_after, created_before=created_before,
+        )
         return self.execute(query, variables)
 
     def get_issues_stats(
