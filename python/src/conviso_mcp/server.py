@@ -23,9 +23,9 @@ gateway = FeedGateway(base_url)
 print(f"[+] Using base API URL: {base_url}", file=sys.stderr)
 
 @mcp.tool()
-def get_companies(page: int, limit: int, search: str):
-    """Get company list in Conviso Platform and IDs."""
-    return gateway.get_companies(page=page, limit=limit, search=search)
+def get_companies(page: int, limit: int, search: str = "", label_eq: str = None):
+    """Get company list in Conviso Platform and IDs. search = name contains; label_eq = exact name match."""
+    return gateway.get_companies(page=page, limit=limit, search=search, label_eq=label_eq)
 
 @mcp.tool()
 def get_company_info(company_id: int):

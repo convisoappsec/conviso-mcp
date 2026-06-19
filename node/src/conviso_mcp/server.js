@@ -60,11 +60,12 @@ function fail(err, msg) {
 server.registerTool(
   'get_companies',
   {
-    description: 'Return a paginated list of companies accessible with the provided API key. Use `search` to filter by company name.',
+    description: 'Return a paginated list of companies accessible with the provided API key. search = name contains; label_eq = exact name match.',
     inputSchema: z.object({
       page: z.number().optional(),
       limit: z.number().optional(),
       search: z.string().optional(),
+      label_eq: z.string().optional(),
     }),
     annotations: {
       title: 'List Companies',
@@ -74,9 +75,9 @@ server.registerTool(
       openWorldHint: true,
     },
   },
-  async ({ page = 1, limit = 10, search = '' }) => {
+  async ({ page = 1, limit = 10, search = '', label_eq = null }) => {
     try {
-      return ok(await gateway.get_companies(page, limit, search));
+      return ok(await gateway.get_companies(page, limit, search, label_eq));
     } catch (err) {
       return fail(err, 'Failed to list companies');
     }

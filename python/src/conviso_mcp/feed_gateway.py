@@ -16,8 +16,9 @@ class FeedGateway:
     def get_base_url() -> str:
         return "https://app.convisoappsec.com"
 
-    def get_companies(self, page: int = 1, limit: int = 10, search=""):
-        companies = self.graphql.get_companies(page=page, limit=limit, search=search)
+    def get_companies(self, page: int = 1, limit: int = 10, search="", label_eq=None):
+        """search = name contains; label_eq = exact name match."""
+        companies = self.graphql.get_companies(page=page, limit=limit, search=search, label_eq=label_eq)
         return companies
     
     def get_company_by_id(self, company_id: int):

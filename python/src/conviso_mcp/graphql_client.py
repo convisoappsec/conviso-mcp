@@ -261,25 +261,21 @@ class GraphQLClient:
         variables = {"id": issue_id}
         return self.execute(query, variables)
 
-    def get_companies(self, page: int = 1, limit: int = 10, search="") -> Dict[str, Any]:
-        query = """
-        query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
-            companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
-                collection {
-                    id
-                    label
-                }
+    COMPANIES_QUERY = """
+    query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
+        companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
+            collection {
+                id
+                label
             }
         }
-        """
-        variables = {
-            "page": page,
-            "limit": limit,
-            "params":{
-                "labelCont": search
-            }
-        }
-        return self.execute(query, variables)
+    }
+    """
+
+    def get_companies(self, page=1, limit=10, search="", label_eq=None):
+        params = filters.prune({"labelCont": search, "labelEq": label_eq})
+        variables = {"page": page, "limit": limit, "params": params}
+        return self.execute(self.COMPANIES_QUERY, variables)
 
     PROJECTS_QUERY = """
     query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){

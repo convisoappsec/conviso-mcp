@@ -8,8 +8,9 @@ class FeedGateway {
     this.graphql = new GraphQLClient(`${this.base_url}/graphql`, apiKey);
   }
 
-  async get_companies(page = 1, limit = 10, search = '') {
-    return this.graphql.get_companies(page, limit, search);
+  // search = name contains; label_eq = exact name match.
+  async get_companies(page = 1, limit = 10, search = '', label_eq = null) {
+    return this.graphql.get_companies(page, limit, search, label_eq);
   }
 
   async get_company_by_id(company_id) {

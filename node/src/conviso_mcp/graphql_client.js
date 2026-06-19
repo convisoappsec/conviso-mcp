@@ -276,6 +276,17 @@ export function buildTopVulnsVariables(companyId, opts = {}) {
   return variables;
 }
 
+export const COMPANIES_QUERY = `
+    query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
+        companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
+            collection {
+                id
+                label
+            }
+        }
+    }
+`;
+
 const PROJECTS_QUERY = `
     query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
         projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
@@ -400,19 +411,10 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_companies(page = 1, limit = 10, search = '') {
-    const query = `
-        query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
-            companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
-                collection {
-                    id
-                    label
-                }
-            }
-        }
-        `;
-    const variables = { page, limit, params: { labelCont: search } };
-    return this.execute(query, variables);
+  async get_companies(page = 1, limit = 10, search = '', label_eq = null) {
+    const params = F.prune({ labelCont: search, labelEq: label_eq });
+    const variables = { page, limit, params };
+    return this.execute(COMPANIES_QUERY, variables);
   }
 
   async get_projects(company_id, page = 1, limit = 1000, search = '', opts = {}) {
