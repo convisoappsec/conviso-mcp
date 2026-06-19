@@ -310,6 +310,12 @@ const PROJECTS_QUERY = `
                     id
                 }
             }
+            metadata {
+                totalCount
+                totalPages
+                currentPage
+                limitValue
+            }
         }
     }
 `;

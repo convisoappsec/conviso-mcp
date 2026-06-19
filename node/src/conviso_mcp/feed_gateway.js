@@ -21,11 +21,7 @@ class FeedGateway {
     return this.graphql.get_issue_by_id(issue_id, return_snippets);
   }
 
-  async get_issues(company_id, search = '', page = 1, limit = 1, project_id = null) {
-    return this.graphql.get_issues(company_id, search, page, limit, project_id);
-  }
-
-  // Rich filters/sort passthrough (parity with Python gateway.get_issues kwargs).
+  // Single rich issues passthrough (parity with Python gateway.get_issues kwargs).
   async getIssues(company_id, opts = {}) {
     return this.graphql.getIssues(company_id, opts);
   }

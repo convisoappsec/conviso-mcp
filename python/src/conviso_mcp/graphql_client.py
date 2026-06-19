@@ -300,6 +300,12 @@ class GraphQLClient:
                     id
                 }
             }
+            metadata {
+                totalCount
+                totalPages
+                currentPage
+                limitValue
+            }
         }
     }
     """
