@@ -60,6 +60,7 @@ def get_issues(company_id: int, page: int = 1, limit: int = 10, project_id: int 
       {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
        "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
        "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
+      extra_filters values are sent as-is — omit a key rather than passing an empty list.
 
     Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
     asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.
@@ -94,11 +95,13 @@ def get_top_vulnerabilities(company_id: int, severities: list = None, statuses: 
     )
 
 @mcp.tool()
-def get_projects(company_id: int, page: int = 1, limit: int = 1000, search: str = "",
+def get_projects(company_id: int, page: int = 1, limit: int = 25, search: str = "",
                  statuses: list = None, project_types: list = None, created_after: str = None,
                  created_before: str = None, tags: list = None, analyst_emails: list = None,
                  sort_by: str = "createdAt", descending: bool = True):
     """Get project list in Conviso Platform by company ID, with filtering and sorting.
+
+    Defaults to 25 results per page; use page to paginate (metadata.totalCount is returned).
 
     Filters (all optional):
     - search: substring match on project label.
@@ -210,6 +213,7 @@ def get_assets(company_id: int, page: int = 1, limit: int = 25, name: str = None
     - covered_by_scan: boolean filter for scan coverage.
     - sort_by: one of updated_at, name, business_impact, risk_score. order: ASC or DESC.
     - extra_filters: dict mapping directly to AssetsSearch for advanced keys.
+      extra_filters values are sent as-is — omit a key rather than passing an empty list.
 
     Returns asset collection (id, name, assetType, environment, audience, dates, riskScore)
     plus metadata (totalCount, totalPages, currentPage) for pagination.

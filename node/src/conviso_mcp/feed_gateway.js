@@ -34,7 +34,7 @@ class FeedGateway {
     return this.graphql.get_issues(company_id, '', 1, 5, null, [issue_id]);
   }
 
-  async get_issues_by_asset_ids(company_id, page = 1, limit = 1, asset_ids = [], search = '', opts = {}) {
+  async get_issues_by_asset_ids(company_id, page = 1, limit = 10, asset_ids = [], search = '', opts = {}) {
     return this.graphql.getIssues(company_id, {
       ...opts,
       page,

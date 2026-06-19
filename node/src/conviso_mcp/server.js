@@ -151,6 +151,7 @@ Filters (all optional):
   {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
    "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
    "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
+  extra_filters values are sent as-is — omit a key rather than passing an empty list.
 
 Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
 asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.`,
@@ -507,6 +508,7 @@ Filters (all optional):
 - covered_by_scan: boolean filter for scan coverage.
 - sort_by: one of updated_at, name, business_impact, risk_score. order: ASC or DESC.
 - extra_filters: object mapping directly to AssetsSearch for advanced keys.
+  extra_filters values are sent as-is — omit a key rather than passing an empty list.
 
 Returns asset collection (id, name, assetType, environment, audience, dates, riskScore)
 plus metadata (totalCount, totalPages, currentPage) for pagination.`,
