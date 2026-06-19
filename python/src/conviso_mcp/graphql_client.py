@@ -1,6 +1,10 @@
 import requests
-import filters
 from typing import Optional, Dict, Any
+
+try:
+    from . import filters
+except ImportError:  # script-mode: server inserts src/conviso_mcp on sys.path
+    import filters
 
 class GraphQLFieldTemplates:
     complete_issue = """
