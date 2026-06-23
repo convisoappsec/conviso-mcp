@@ -16,7 +16,7 @@ console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
 const server = new McpServer({
   name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.3.2',
+  version: pkg.version || '0.4.0',
 });
 
 function sanitizeError(err, message = 'Request failed') {
