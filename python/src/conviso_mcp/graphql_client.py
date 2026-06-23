@@ -1,6 +1,11 @@
 import requests
 from typing import Optional, Dict, Any
 
+try:
+    from . import filters
+except ImportError:  # script-mode: server inserts src/conviso_mcp on sys.path
+    import filters
+
 class GraphQLFieldTemplates:
     complete_issue = """
         id
@@ -182,50 +187,66 @@ class GraphQLClient:
 
         return result["data"]
 
-    def get_issues(self, company_id: str, search: str, page: int = 1, limit: int = 1, project_id: int = None, issue_ids: list = [], asset_ids = []) -> Dict[str, Any]:
-        query = """
-        query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput) {
-            issues(companyId: $companyId,  pagination: $pagination, filters: $filters) {
-                collection {
-                    id
-                    title
-                    severity
-                    project {
-                        company {
-                            id
-                        }
-                    }
-
-                    asset {
-                        id
-                    }
-                }
+    ISSUES_QUERY = """
+    query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput, $sortOptions: [IssueSortOptionInput!]) {
+        issues(companyId: $companyId, pagination: $pagination, filters: $filters, sortOptions: $sortOptions) {
+            collection {
+                id
+                title
+                severity
+                status
+                createdAt
+                updatedAt
+                sla { state dueAt daysRemaining }
+                assignedUsers { name email }
+                asset { id name }
+                project { id label company { id } }
             }
+            metadata { totalCount totalPages currentPage limitValue }
         }
-        """
-        variables = {
+    }
+    """
+
+    @staticmethod
+    def build_issues_variables(company_id, page=1, limit=10, *, severities=None, statuses=None,
+                               sla_states=None, created_after=None, created_before=None,
+                               assignee_emails=None, search=None, project_id=None,
+                               asset_ids=None, issue_ids=None, sort_by=None, order=None,
+                               extra_filters=None):
+        f = filters
+        built = {
+            "severities": f.normalize_enum_list(severities, f.SEVERITIES),
+            "statuses": f.normalize_enum_list(statuses, f.ISSUE_STATUSES),
+            "slaStates": f.normalize_enum_list(sla_states, f.SLA_STATES),
+            "createdAtRange": f.build_date_range(created_after, created_before),
+            "assigneeEmails": assignee_emails or [],
+            "partialTitle": search,
+            "projectIds": [project_id] if project_id not in (None, 0) else [],
+            "assetIds": asset_ids or [],
+            "ids": issue_ids or [],
+        }
+        built = f.prune(built)
+        if extra_filters:
+            built.update({k: v for k, v in extra_filters.items() if v is not None})
+        return {
             "companyId": company_id,
-            "filters": {
-                "title" : search 
-            },
-            "pagination" : {
-                "page" : page,
-                "perPage" : limit
-            }
+            "pagination": {"page": page, "perPage": limit},
+            "filters": built,
+            "sortOptions": f.build_issue_sort_options(sort_by, order),
         }
 
-        if project_id is not None and project_id != 0:
-            variables["filters"]["projectIds"] = [
-                project_id
-            ]
-
-        if len(issue_ids) > 0:
-            variables["filters"]["ids"] = issue_ids
-
-        if len(asset_ids) > 0:
-            variables["filters"]["assetIds"] = asset_ids
-
-        return self.execute(query, variables)
+    def get_issues(self, company_id, search=None, page=1, limit=10, project_id=None,
+                   issue_ids=None, asset_ids=None, severities=None, statuses=None,
+                   sla_states=None, created_after=None, created_before=None,
+                   assignee_emails=None, sort_by=None, order=None, extra_filters=None):
+        variables = self.build_issues_variables(
+            company_id, page, limit, severities=severities, statuses=statuses,
+            sla_states=sla_states, created_after=created_after, created_before=created_before,
+            assignee_emails=assignee_emails, search=search, project_id=project_id,
+            asset_ids=asset_ids, issue_ids=issue_ids, sort_by=sort_by, order=order,
+            extra_filters=extra_filters,
+        )
+        return self.execute(self.ISSUES_QUERY, variables)
 
     def get_issue_by_id(self, issue_id: str, return_snippets: bool = False) -> Dict[str, Any]:
         query = """
@@ -244,66 +265,74 @@ class GraphQLClient:
         variables = {"id": issue_id}
         return self.execute(query, variables)
 
-    def get_companies(self, page: int = 1, limit: int = 10, search="") -> Dict[str, Any]:
-        query = """
-        query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
-            companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
-                collection {
-                    id
-                    label
-                }
+    COMPANIES_QUERY = """
+    query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
+        companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
+            collection {
+                id
+                label
             }
         }
-        """
-        variables = {
-            "page": page,
-            "limit": limit,
-            "params":{
-                "labelCont": search
-            }
-        }
-        return self.execute(query, variables)
+    }
+    """
 
-    def get_projects(self, company_id: int, page: int = 1, limit: int = 1000, search: str = "") -> Dict[str, Any]:
-        query = """
-        query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
-            projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
-                collection {
-                    id
-                    label
-                    status
-                    createdAt
-                    startDate
-                    endDate
-                    allocatedAnalyst {
-                        portalUser {
-                            name
-                        }
-                    }
-                    projectType {
-                        label
-                    }
+    def get_companies(self, page=1, limit=10, search="", label_eq=None):
+        params = filters.prune({"labelCont": search, "labelEq": label_eq})
+        variables = {"page": page, "limit": limit, "params": params}
+        return self.execute(self.COMPANIES_QUERY, variables)
 
-                    company {
-                        id
+    PROJECTS_QUERY = """
+    query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
+        projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
+            collection {
+                id
+                label
+                status
+                createdAt
+                startDate
+                endDate
+                allocatedAnalyst {
+                    portalUser {
+                        name
                     }
                 }
+                projectType {
+                    label
+                }
+
+                company {
+                    id
+                }
+            }
+            metadata {
+                totalCount
+                totalPages
+                currentPage
+                limitValue
             }
         }
-        """
-        variables = {
-            "page": page,
-            "limit": limit,
-            "params": {
-                "scopeIdEq" : company_id,
-                "labelCont" : search
-                #"projectStatusLabelEq": "Fixing"
-            },
-            "sortBy": "createdAt",
-            "descending": True
-        }
-        return self.execute(query, variables)
-    
+    }
+    """
+
+    @staticmethod
+    def build_projects_variables(company_id, page=1, limit=1000, *, search=None, statuses=None,
+                                 project_types=None, created_after=None, created_before=None,
+                                 tags=None, analyst_emails=None, sort_by="createdAt", descending=True):
+        params = filters.prune({
+            "scopeIdEq": company_id,
+            "labelCont": search,
+            "projectStatusLabelIn": statuses or [],
+            "projectTypeLabelIn": project_types or [],
+            "createdAtGteq": created_after,
+            "createdAtLteq": created_before,
+            "tags": tags or [],
+            "analystsEmailIn": analyst_emails or [],
+        })
+        return {"page": page, "limit": limit, "params": params, "sortBy": sort_by, "descending": descending}
+
+    def get_projects(self, company_id, page=1, limit=1000, search=None, **kw) -> Dict[str, Any]:
+        return self.execute(self.PROJECTS_QUERY, self.build_projects_variables(company_id, page, limit, search=search, **kw))
+
     def get_project_by_id(self, project_id: str) -> Dict[str, Any]:
         query = """
         query GetProject($id: ID!) {
@@ -395,35 +424,52 @@ class GraphQLClient:
         variables = {"id": asset_id}
         return self.execute(query, variables)
 
-    def get_assets_by_company(self, company_id: str, page: int = 1, limit: int = 10) -> Dict[str, Any]:
-        query = """
-        query ListAssets($companyId: ID!, $page: Int, $limit: Int) {
-            assets(companyId: $companyId, page: $page, limit: $limit) {
-                collection {
-                    id
-                    name
-                    assetType
-                    environment
-                    audience
-                    createdAt
-                    updatedAt
-                }
-                metadata {
-                    totalCount
-                    totalPages
-                    currentPage
-                    limitValue
-                }
+    ASSETS_QUERY = """
+    query ListAssets($companyId: ID!, $page: Int, $limit: Int, $search: AssetsSearch) {
+        assets(companyId: $companyId, page: $page, limit: $limit, search: $search) {
+            collection {
+                id
+                name
+                assetType
+                environment
+                audience
+                createdAt
+                updatedAt
+                riskScore { current { value } }
             }
+            metadata { totalCount totalPages currentPage limitValue }
         }
-        """
-        variables = {
-            "companyId": company_id,
-            "page": page,
-            "limit": limit
-        }
-        return self.execute(query, variables)
-    
+    }
+    """
+
+    @staticmethod
+    def build_assets_variables(company_id, page=1, limit=10, *, name=None, search=None,
+                               tags=None, technology=None, business_impact=None,
+                               exploitability=None, asset_type=None, environment_compromised=None,
+                               covered_by_scan=None, sort_by=None, order=None, extra_filters=None):
+        f = filters
+        s = f.prune({
+            "name": name,
+            "search": search,
+            "tags": tags or [],
+            "technology": technology or [],
+            "businessImpact": f.normalize_enum_list(business_impact, f.BUSINESS_IMPACT),
+            "exploitability": f.normalize_enum_list(exploitability, f.EXPLOITABILITY),
+            "assetType": asset_type,
+            "sortBy": f.normalize_enum(sort_by, f.ASSET_SORT_BY, upper=False),
+            "order": f.normalize_enum(order, f.ORDER),
+        })
+        if environment_compromised is not None:
+            s["environmentCompromised"] = environment_compromised
+        if covered_by_scan is not None:
+            s["coveredByScan"] = covered_by_scan
+        if extra_filters:
+            s.update({k: v for k, v in extra_filters.items() if v is not None})
+        return {"companyId": company_id, "page": page, "limit": limit, "search": s}
+
+    def get_assets_by_company(self, company_id, page=1, limit=10, **kw):
+        return self.execute(self.ASSETS_QUERY, self.build_assets_variables(company_id, page, limit, **kw))
+
 
     def list_allocated_analyses(self, page: int = 1, limit: int = 10) -> Dict[str, Any]:
         query = """
@@ -455,13 +501,35 @@ class GraphQLClient:
         }
         return self.execute(query, variables)
 
+    @staticmethod
+    def build_top_vulns_variables(company_id, *, severities=None, statuses=None, asset_ids=None,
+                                  asset_tags=None, created_after=None, created_before=None):
+        f = filters
+        fl = f.prune({
+            "severities": f.normalize_enum_list(severities, f.SEVERITIES),
+            "statuses": f.normalize_enum_list(statuses, f.ISSUE_STATUSES),
+            "assetIds": asset_ids or [],
+            "assetTags": asset_tags or [],
+            "createdAtRange": f.build_date_range(created_after, created_before),
+        })
+        variables = {"companyId": company_id}
+        if fl:
+            variables["filters"] = fl
+        return variables
+
     def get_top_vulnerabilities(
         self,
-        company_id: int
+        company_id: int,
+        severities: list = None,
+        statuses: list = None,
+        asset_ids: list = None,
+        asset_tags: list = None,
+        created_after: str = None,
+        created_before: str = None,
     ) -> Dict[str, Any]:
         query = """
-        query TopVulnerabilities($companyId: ID!) {
-            topVulnerabilities(companyId: $companyId) {
+        query TopVulnerabilities($companyId: ID!, $filters: TopVulnerabilitiesFiltersInput) {
+            topVulnerabilities(companyId: $companyId, filters: $filters) {
                 affectedAssetsCount
                 criticalCount
                 highCount
@@ -472,9 +540,10 @@ class GraphQLClient:
             }
         }
         """
-        variables = {
-            "companyId": company_id
-        }
+        variables = self.build_top_vulns_variables(
+            company_id, severities=severities, statuses=statuses, asset_ids=asset_ids,
+            asset_tags=asset_tags, created_after=created_after, created_before=created_before,
+        )
         return self.execute(query, variables)
 
     def get_issues_stats(

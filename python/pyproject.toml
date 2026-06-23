@@ -1,6 +1,6 @@
 [project]
 name = "conviso-mcp"
-version = "0.3.2"
+version = "0.4.0"
 description = "MCP Server for Conviso Platform integration"
 requires-python = ">=3.10"
 authors = [
@@ -23,3 +23,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

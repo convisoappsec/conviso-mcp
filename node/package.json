@@ -1,13 +1,13 @@
 {
   "name": "@convisoappsec/mcp",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "MCP Server for Conviso Platform integration",
   "type": "module",
   "main": "src/conviso_mcp/server.js",
   "scripts": {
     "start": "node src/conviso_mcp/server.js",
     "dev": "node src/conviso_mcp/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "bin": {
     "conviso-mcp": "src/conviso_mcp/server.js"

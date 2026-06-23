@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as F from './filters.js';
 
 const GraphQLFieldTemplates = {
   complete_issue: `
@@ -162,6 +163,181 @@ GraphQLFieldTemplates.complete_issue_with_snippet = `
     }
 `;
 
+export const ISSUES_QUERY = `
+  query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput, $sortOptions: [IssueSortOptionInput!]) {
+    issues(companyId: $companyId, pagination: $pagination, filters: $filters, sortOptions: $sortOptions) {
+      collection {
+        id
+        title
+        severity
+        status
+        createdAt
+        updatedAt
+        sla { state dueAt daysRemaining }
+        assignedUsers { name email }
+        asset { id name }
+        project { id label company { id } }
+      }
+      metadata { totalCount totalPages currentPage limitValue }
+    }
+  }
+`;
+
+export function buildIssuesVariables(companyId, page = 1, limit = 10, opts = {}) {
+  const {
+    severities, statuses, slaStates, createdAfter, createdBefore, assigneeEmails,
+    search, projectId, assetIds, issueIds, sortBy, order, extraFilters,
+  } = opts;
+  let built = F.prune({
+    severities: F.normalizeEnumList(severities, F.SEVERITIES),
+    statuses: F.normalizeEnumList(statuses, F.ISSUE_STATUSES),
+    slaStates: F.normalizeEnumList(slaStates, F.SLA_STATES),
+    createdAtRange: F.buildDateRange(createdAfter, createdBefore),
+    assigneeEmails: assigneeEmails || [],
+    partialTitle: search,
+    projectIds: (projectId !== undefined && projectId !== null && projectId !== 0) ? [projectId] : [],
+    assetIds: assetIds || [],
+    ids: issueIds || [],
+  });
+  if (extraFilters) {
+    for (const [k, val] of Object.entries(extraFilters)) {
+      if (val !== null && val !== undefined) built[k] = val;
+    }
+  }
+  return {
+    companyId,
+    pagination: { page, perPage: limit },
+    filters: built,
+    sortOptions: F.buildIssueSortOptions(sortBy, order),
+  };
+}
+
+export const ASSETS_QUERY = `
+  query ListAssets($companyId: ID!, $page: Int, $limit: Int, $search: AssetsSearch) {
+    assets(companyId: $companyId, page: $page, limit: $limit, search: $search) {
+      collection {
+        id
+        name
+        assetType
+        environment
+        audience
+        createdAt
+        updatedAt
+        riskScore { current { value } }
+      }
+      metadata { totalCount totalPages currentPage limitValue }
+    }
+  }
+`;
+
+export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {}) {
+  const {
+    name, search, tags, technology, businessImpact, exploitability, assetType,
+    environmentCompromised, coveredByScan, sortBy, order, extraFilters,
+  } = opts;
+  const s = F.prune({
+    name,
+    search,
+    tags: tags || [],
+    technology: technology || [],
+    businessImpact: F.normalizeEnumList(businessImpact, F.BUSINESS_IMPACT),
+    exploitability: F.normalizeEnumList(exploitability, F.EXPLOITABILITY),
+    assetType,
+    sortBy: F.normalizeEnum(sortBy, F.ASSET_SORT_BY, false),
+    order: F.normalizeEnum(order, F.ORDER),
+  });
+  if (environmentCompromised !== null && environmentCompromised !== undefined) {
+    s.environmentCompromised = environmentCompromised;
+  }
+  if (coveredByScan !== null && coveredByScan !== undefined) {
+    s.coveredByScan = coveredByScan;
+  }
+  if (extraFilters) {
+    for (const [k, val] of Object.entries(extraFilters)) {
+      if (val !== null && val !== undefined) s[k] = val;
+    }
+  }
+  return { companyId, page, limit, search: s };
+}
+
+export function buildTopVulnsVariables(companyId, opts = {}) {
+  const {
+    severities, statuses, assetIds, assetTags, createdAfter, createdBefore,
+  } = opts;
+  const fl = F.prune({
+    severities: F.normalizeEnumList(severities, F.SEVERITIES),
+    statuses: F.normalizeEnumList(statuses, F.ISSUE_STATUSES),
+    assetIds: assetIds || [],
+    assetTags: assetTags || [],
+    createdAtRange: F.buildDateRange(createdAfter, createdBefore),
+  });
+  const variables = { companyId };
+  if (Object.keys(fl).length) variables.filters = fl;
+  return variables;
+}
+
+export const COMPANIES_QUERY = `
+    query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
+        companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
+            collection {
+                id
+                label
+            }
+        }
+    }
+`;
+
+const PROJECTS_QUERY = `
+    query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
+        projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
+            collection {
+                id
+                label
+                status
+                createdAt
+                startDate
+                endDate
+                allocatedAnalyst {
+                    portalUser {
+                        name
+                    }
+                }
+                projectType {
+                    label
+                }
+
+                company {
+                    id
+                }
+            }
+            metadata {
+                totalCount
+                totalPages
+                currentPage
+                limitValue
+            }
+        }
+    }
+`;
+
+export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts = {}) {
+  const {
+    search, statuses, projectTypes, createdAfter, createdBefore, tags, analystEmails,
+    sortBy = 'createdAt', descending = true,
+  } = opts;
+  const params = F.prune({
+    scopeIdEq: companyId,
+    labelCont: search,
+    projectStatusLabelIn: statuses || [],
+    projectTypeLabelIn: projectTypes || [],
+    createdAtGteq: createdAfter,
+    createdAtLteq: createdBefore,
+    tags: tags || [],
+    analystsEmailIn: analystEmails || [],
+  });
+  return { page, limit, params, sortBy, descending };
+}
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -211,45 +387,21 @@ class GraphQLClient {
     return response.data.data;
   }
 
+  async getIssues(companyId, opts = {}) {
+    const variables = buildIssuesVariables(companyId, opts.page || 1, opts.limit || 10, opts);
+    return this.execute(ISSUES_QUERY, variables);
+  }
+
+  // Backward-compatible positional-argument wrapper used by existing FeedGateway callers.
   async get_issues(company_id, search, page = 1, limit = 1, project_id = null, issue_ids = [], asset_ids = []) {
-    const query = `
-        query GetIssues($companyId: ID!, $pagination: PaginationInput!, $filters: IssuesFiltersInput) {
-            issues(companyId: $companyId,  pagination: $pagination, filters: $filters) {
-                collection {
-                    id
-                    title
-                    severity
-                    project {
-                        company {
-                            id
-                        }
-                    }
-
-                    asset {
-                        id
-                    }
-                }
-            }
-        }
-        `;
-
-    const variables = {
-      companyId: company_id,
-      filters: { title: search },
-      pagination: { page: page, perPage: limit }
-    };
-
-    if (project_id !== null && project_id !== 0) {
-      variables.filters.projectIds = [project_id];
-    }
-    if (Array.isArray(issue_ids) && issue_ids.length > 0) {
-      variables.filters.ids = issue_ids;
-    }
-    if (Array.isArray(asset_ids) && asset_ids.length > 0) {
-      variables.filters.assetIds = asset_ids;
-    }
-
-    return this.execute(query, variables);
+    return this.getIssues(company_id, {
+      page,
+      limit,
+      search,
+      projectId: project_id,
+      issueIds: issue_ids,
+      assetIds: asset_ids,
+    });
   }
 
   async get_issue_by_id(issue_id, return_snippets = false) {
@@ -265,56 +417,15 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_companies(page = 1, limit = 10, search = '') {
-    const query = `
-        query companies($page: Int, $limit: Int, $params: CompanySearch, $order: OrderScopesParams, $orderType: OrderParams){
-            companies(page: $page, limit: $limit, params: $params, order: $order, orderType : $orderType) {
-                collection {
-                    id
-                    label
-                }
-            }
-        }
-        `;
-    const variables = { page, limit, params: { labelCont: search } };
-    return this.execute(query, variables);
+  async get_companies(page = 1, limit = 10, search = '', label_eq = null) {
+    const params = F.prune({ labelCont: search, labelEq: label_eq });
+    const variables = { page, limit, params };
+    return this.execute(COMPANIES_QUERY, variables);
   }
 
-  async get_projects(company_id, page = 1, limit = 1000, search = '') {
-    const query = `
-        query projects($page: Int, $limit: Int, $params: ProjectSearch, $sortBy: String, $descending: Boolean){
-            projects(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending : $descending) {
-                collection {
-                    id
-                    label
-                    status
-                    createdAt
-                    startDate
-                    endDate
-                    allocatedAnalyst {
-                        portalUser {
-                            name
-                        }
-                    }
-                    projectType {
-                        label
-                    }
-
-                    company {
-                        id
-                    }
-                }
-            }
-        }
-        `;
-    const variables = {
-      page,
-      limit,
-      params: { scopeIdEq: company_id, labelCont: search },
-      sortBy: 'createdAt',
-      descending: true
-    };
-    return this.execute(query, variables);
+  async get_projects(company_id, page = 1, limit = 1000, search = '', opts = {}) {
+    const variables = buildProjectsVariables(company_id, page, limit, { search, ...opts });
+    return this.execute(PROJECTS_QUERY, variables);
   }
 
   async get_project_by_id(project_id) {
@@ -356,30 +467,9 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_assets_by_company(company_id, page = 1, limit = 10) {
-    const query = `
-        query ListAssets($companyId: ID!, $page: Int, $limit: Int) {
-            assets(companyId: $companyId, page: $page, limit: $limit) {
-                collection {
-                    id
-                    name
-                    assetType
-                    environment
-                    audience
-                    createdAt
-                    updatedAt
-                }
-                metadata {
-                    totalCount
-                    totalPages
-                    currentPage
-                    limitValue
-                }
-            }
-        }
-        `;
-    const variables = { companyId: company_id, page, limit };
-    return this.execute(query, variables);
+  async get_assets_by_company(company_id, page = 1, limit = 10, opts = {}) {
+    const variables = buildAssetsVariables(company_id, page, limit, opts);
+    return this.execute(ASSETS_QUERY, variables);
   }
 
   async get_asset_by_id(asset_id) {
@@ -412,10 +502,10 @@ class GraphQLClient {
     return this.execute(query, variables);
   }
 
-  async get_top_vulnerabilities(company_id) {
+  async get_top_vulnerabilities(company_id, opts = {}) {
     const query = `
-        query TopVulnerabilities($companyId: ID!) {
-            topVulnerabilities(companyId: $companyId) {
+        query TopVulnerabilities($companyId: ID!, $filters: TopVulnerabilitiesFiltersInput) {
+            topVulnerabilities(companyId: $companyId, filters: $filters) {
                 affectedAssetsCount
                 criticalCount
                 highCount
@@ -426,7 +516,7 @@ class GraphQLClient {
             }
         }
         `;
-    const variables = { companyId: company_id };
+    const variables = buildTopVulnsVariables(company_id, opts);
     return this.execute(query, variables);
   }
 
