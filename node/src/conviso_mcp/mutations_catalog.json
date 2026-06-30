@@ -1,0 +1,3174 @@
+{
+  "generatedAt": "2026-06-30T15:10:17.055Z",
+  "schemaSource": "sdl.gql",
+  "mutationCount": 37,
+  "mutations": [
+    {
+      "name": "addApplicationAssets",
+      "description": "Link additional assets to an Application",
+      "args": [
+        {
+          "name": "input",
+          "type": "AddApplicationAssetsInput!"
+        }
+      ],
+      "inputType": "AddApplicationAssetsInput",
+      "payloadType": "AddApplicationAssetsPayload",
+      "payloadSelection": "application { __typename id } clientMutationId errors",
+      "destructive": false,
+      "category": "application"
+    },
+    {
+      "name": "bulkChangeIssueStatus",
+      "description": "Update status for multiple issues",
+      "args": [
+        {
+          "name": "input",
+          "type": "BulkChangeIssueStatusInput!"
+        }
+      ],
+      "inputType": "BulkChangeIssueStatusInput",
+      "payloadType": "BulkChangeIssueStatusPayload",
+      "payloadSelection": "clientMutationId jobId",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "bulkDeleteIssues",
+      "description": "Delete issues",
+      "args": [
+        {
+          "name": "input",
+          "type": "BulkDeleteIssuesInput!"
+        }
+      ],
+      "inputType": "BulkDeleteIssuesInput",
+      "payloadType": "BulkDeleteIssuesPayload",
+      "payloadSelection": "clientMutationId jobId",
+      "destructive": true,
+      "category": "issue"
+    },
+    {
+      "name": "bulkDeleteProjects",
+      "description": "Bulk delete projects",
+      "args": [
+        {
+          "name": "input",
+          "type": "BulkDeleteProjectInput!"
+        }
+      ],
+      "inputType": "BulkDeleteProjectInput",
+      "payloadType": "BulkDeleteProjectPayload",
+      "payloadSelection": "clientMutationId projects { __typename }",
+      "destructive": true,
+      "category": "project"
+    },
+    {
+      "name": "bulkUpdateProjectStatus",
+      "description": "Bulk update project status",
+      "args": [
+        {
+          "name": "input",
+          "type": "BulkUpdateProjectStatusInput!"
+        }
+      ],
+      "inputType": "BulkUpdateProjectStatusInput",
+      "payloadType": "BulkUpdateProjectStatusPayload",
+      "payloadSelection": "clientMutationId projects { __typename }",
+      "destructive": false,
+      "category": "project"
+    },
+    {
+      "name": "cancelPentestExecution",
+      "description": "Cancel a running AI Pentest execution",
+      "args": [
+        {
+          "name": "input",
+          "type": "CancelPentestExecutionInput!"
+        }
+      ],
+      "inputType": "CancelPentestExecutionInput",
+      "payloadType": "CancelPentestExecutionPayload",
+      "payloadSelection": "clientMutationId pentestExecution { __typename id }",
+      "destructive": true,
+      "category": "pentest"
+    },
+    {
+      "name": "changeIssueStatus",
+      "description": "Update the status of an issue",
+      "args": [
+        {
+          "name": "input",
+          "type": "ChangeIssueStatusInput!"
+        }
+      ],
+      "inputType": "ChangeIssueStatusInput",
+      "payloadType": "ChangeIssueStatusPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "createApplication",
+      "description": "Create an Application grouping assets for combined risk view",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateApplicationInput!"
+        }
+      ],
+      "inputType": "CreateApplicationInput",
+      "payloadType": "CreateApplicationPayload",
+      "payloadSelection": "application { __typename id } clientMutationId errors",
+      "destructive": false,
+      "category": "application"
+    },
+    {
+      "name": "createAsset",
+      "description": "Create an Asset",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateAssetInput!"
+        }
+      ],
+      "inputType": "CreateAssetInput",
+      "payloadType": "CreateAssetPayload",
+      "payloadSelection": "asset { __typename id } clientMutationId errors",
+      "destructive": false,
+      "category": "asset"
+    },
+    {
+      "name": "createNetworkVulnerability",
+      "description": "Create a Network Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateNetworkVulnerabilityInput!"
+        }
+      ],
+      "inputType": "CreateNetworkVulnerabilityInput",
+      "payloadType": "CreateNetworkVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "createOrUpdateRequirement",
+      "description": "Create or Update a Requirement",
+      "args": [
+        {
+          "name": "input",
+          "type": "RequirementInput!"
+        }
+      ],
+      "inputType": "RequirementInput",
+      "payloadType": "CreateOrUpdateRequirementPayload",
+      "payloadSelection": "clientMutationId requirement { __typename id }",
+      "destructive": false,
+      "category": "requirement"
+    },
+    {
+      "name": "createPentestArtifact",
+      "description": "Create an AI Pentest artifact",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreatePentestArtifactInput!"
+        }
+      ],
+      "inputType": "CreatePentestArtifactInput",
+      "payloadType": "CreatePentestArtifactPayload",
+      "payloadSelection": "clientMutationId pentestArtifact { __typename id }",
+      "destructive": false,
+      "category": "pentest"
+    },
+    {
+      "name": "createPentestExecution",
+      "description": "Trigger a new AI Pentest execution for an artifact",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreatePentestExecutionInput!"
+        }
+      ],
+      "inputType": "CreatePentestExecutionInput",
+      "payloadType": "CreatePentestExecutionPayload",
+      "payloadSelection": "clientMutationId pentestExecution { __typename id }",
+      "destructive": false,
+      "category": "pentest"
+    },
+    {
+      "name": "createPentestRetest",
+      "description": "Trigger an in-place retest of a finished AI Pentest project",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreatePentestRetestInput!"
+        }
+      ],
+      "inputType": "CreatePentestRetestInput",
+      "payloadType": "CreatePentestRetestPayload",
+      "payloadSelection": "clientMutationId pentestExecution { __typename id }",
+      "destructive": false,
+      "category": "pentest"
+    },
+    {
+      "name": "createProject",
+      "description": "Create Project",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateProjectInput!"
+        }
+      ],
+      "inputType": "CreateProjectInput",
+      "payloadType": "CreateProjectPayload",
+      "payloadSelection": "clientMutationId errors project { __typename id }",
+      "destructive": false,
+      "category": "project"
+    },
+    {
+      "name": "createProjectRequirement",
+      "description": "Create a requirement in a project (with optional nested activities)",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateProjectRequirementInput!"
+        }
+      ],
+      "inputType": "CreateProjectRequirementInput",
+      "payloadType": "CreateProjectRequirementPayload",
+      "payloadSelection": "clientMutationId errors projectRequirement { __typename id }",
+      "destructive": false,
+      "category": "requirement"
+    },
+    {
+      "name": "createSourceCodeVulnerability",
+      "description": "Create a Source Code Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateSourceCodeVulnerabilityInput!"
+        }
+      ],
+      "inputType": "CreateSourceCodeVulnerabilityInput",
+      "payloadType": "CreateSourceCodeVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "createThreatModelArtifact",
+      "description": "Create a threat model artifact",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateThreatModelArtifactInput!"
+        }
+      ],
+      "inputType": "CreateThreatModelArtifactInput",
+      "payloadType": "CreateThreatModelArtifactPayload",
+      "payloadSelection": "clientMutationId threatModelArtifact { __typename id }",
+      "destructive": false,
+      "category": "threat_model"
+    },
+    {
+      "name": "createThreatModelArtifactVersion",
+      "description": "Create a threat model artifact version",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateThreatModelArtifactVersionInput!"
+        }
+      ],
+      "inputType": "CreateThreatModelArtifactVersionInput",
+      "payloadType": "CreateThreatModelArtifactVersionPayload",
+      "payloadSelection": "clientMutationId version { __typename id }",
+      "destructive": false,
+      "category": "threat_model"
+    },
+    {
+      "name": "createThreatModelingRequirements",
+      "description": "Create Threat Modeling's Requirements",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateThreatModelingRequirementsInput!"
+        }
+      ],
+      "inputType": "CreateThreatModelingRequirementsInput",
+      "payloadType": "CreateThreatModelingRequirementsPayload",
+      "payloadSelection": "clientMutationId requirements { __typename id }",
+      "destructive": false,
+      "category": "threat_model"
+    },
+    {
+      "name": "createTicket",
+      "description": "Create a ticket",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateTicketInput!"
+        }
+      ],
+      "inputType": "CreateTicketInput",
+      "payloadType": "CreateTicketPayload",
+      "payloadSelection": "clientMutationId errors { __typename } ticket { __typename id }",
+      "destructive": false,
+      "category": "ticket"
+    },
+    {
+      "name": "createWebVulnerability",
+      "description": "Create a Web Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "CreateWebVulnerabilityInput!"
+        }
+      ],
+      "inputType": "CreateWebVulnerabilityInput",
+      "payloadType": "CreateWebVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "markIssueAsAnalyzed",
+      "description": "Mark an issue as analyzed by the AI agent",
+      "args": [
+        {
+          "name": "input",
+          "type": "MarkIssueAsAnalyzedInput!"
+        }
+      ],
+      "inputType": "MarkIssueAsAnalyzedInput",
+      "payloadType": "MarkIssueAsAnalyzedPayload",
+      "payloadSelection": "aiAgentAnalysis { __typename id } clientMutationId",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "removeApplicationAssets",
+      "description": "Remove specific assets from an Application",
+      "args": [
+        {
+          "name": "input",
+          "type": "RemoveApplicationAssetsInput!"
+        }
+      ],
+      "inputType": "RemoveApplicationAssetsInput",
+      "payloadType": "RemoveApplicationAssetsPayload",
+      "payloadSelection": "application { __typename id } clientMutationId errors",
+      "destructive": true,
+      "category": "application"
+    },
+    {
+      "name": "startConvisoDast",
+      "description": "Start a DAST scan now on Conviso DAST.",
+      "args": [
+        {
+          "name": "input",
+          "type": "StartConvisoDastInput!"
+        }
+      ],
+      "inputType": "StartConvisoDastInput",
+      "payloadType": "StartConvisoDastPayload",
+      "payloadSelection": "clientMutationId controlSyncStatus { __typename id } scannerConfiguration { __typename id }",
+      "destructive": false,
+      "category": "asset"
+    },
+    {
+      "name": "submitPentestRetestResult",
+      "description": "Agent reports a per-vulnerability retest verdict",
+      "args": [
+        {
+          "name": "input",
+          "type": "SubmitPentestRetestResultInput!"
+        }
+      ],
+      "inputType": "SubmitPentestRetestResultInput",
+      "payloadType": "SubmitPentestRetestResultPayload",
+      "payloadSelection": "clientMutationId ok",
+      "destructive": false,
+      "category": "pentest"
+    },
+    {
+      "name": "updateApplication",
+      "description": "Update name/description/status/assets of an Application",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateApplicationInput!"
+        }
+      ],
+      "inputType": "UpdateApplicationInput",
+      "payloadType": "UpdateApplicationPayload",
+      "payloadSelection": "application { __typename id } clientMutationId errors",
+      "destructive": false,
+      "category": "application"
+    },
+    {
+      "name": "updateAsset",
+      "description": "Update an asset",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateAssetInput!"
+        }
+      ],
+      "inputType": "UpdateAssetInput",
+      "payloadType": "UpdateAssetPayload",
+      "payloadSelection": "asset { __typename id } clientMutationId",
+      "destructive": false,
+      "category": "asset"
+    },
+    {
+      "name": "updateIssueAssignee",
+      "description": "Change Issue Assignee",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateIssueAssigneesInput!"
+        }
+      ],
+      "inputType": "UpdateIssueAssigneesInput",
+      "payloadType": "UpdateIssueAssigneesPayload",
+      "payloadSelection": "assignees { __typename id } clientMutationId",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "updateNetworkVulnerability",
+      "description": "Update a Network Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateNetworkVulnerabilityInput!"
+        }
+      ],
+      "inputType": "UpdateNetworkVulnerabilityInput",
+      "payloadType": "UpdateNetworkVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "updatePentestArtifact",
+      "description": "Update an AI Pentest artifact",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdatePentestArtifactInput!"
+        }
+      ],
+      "inputType": "UpdatePentestArtifactInput",
+      "payloadType": "UpdatePentestArtifactPayload",
+      "payloadSelection": "clientMutationId pentestArtifact { __typename id }",
+      "destructive": false,
+      "category": "pentest"
+    },
+    {
+      "name": "updateProject",
+      "description": "Update Project",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateProjectInput!"
+        }
+      ],
+      "inputType": "UpdateProjectInput",
+      "payloadType": "UpdateProjectPayload",
+      "payloadSelection": "clientMutationId errors msg project { __typename id }",
+      "destructive": false,
+      "category": "project"
+    },
+    {
+      "name": "updateProjectRequirement",
+      "description": "Update a project requirement (with optional nested activities management)",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateProjectRequirementInput!"
+        }
+      ],
+      "inputType": "UpdateProjectRequirementInput",
+      "payloadType": "UpdateProjectRequirementPayload",
+      "payloadSelection": "clientMutationId errors projectRequirement { __typename id }",
+      "destructive": false,
+      "category": "requirement"
+    },
+    {
+      "name": "updateProjectStatus",
+      "description": "Update the status of a project",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateProjectStatusInput!"
+        }
+      ],
+      "inputType": "UpdateProjectStatusInput",
+      "payloadType": "UpdateProjectStatusPayload",
+      "payloadSelection": "clientMutationId errors project { __typename id }",
+      "destructive": false,
+      "category": "project"
+    },
+    {
+      "name": "updateSourceCodeVulnerability",
+      "description": "Update a Source Code Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateSourceCodeVulnerabilityInput!"
+        }
+      ],
+      "inputType": "UpdateSourceCodeVulnerabilityInput",
+      "payloadType": "UpdateSourceCodeVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    },
+    {
+      "name": "updateThreatModelArtifact",
+      "description": "Update a threat model artifact",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateThreatModelArtifactInput!"
+        }
+      ],
+      "inputType": "UpdateThreatModelArtifactInput",
+      "payloadType": "UpdateThreatModelArtifactPayload",
+      "payloadSelection": "clientMutationId threatModelArtifact { __typename id }",
+      "destructive": false,
+      "category": "threat_model"
+    },
+    {
+      "name": "updateWebVulnerability",
+      "description": "Update a Web Vulnerability",
+      "args": [
+        {
+          "name": "input",
+          "type": "UpdateWebVulnerabilityInput!"
+        }
+      ],
+      "inputType": "UpdateWebVulnerabilityInput",
+      "payloadType": "UpdateWebVulnerabilityPayload",
+      "payloadSelection": "clientMutationId issue { __typename id }",
+      "destructive": false,
+      "category": "issue"
+    }
+  ],
+  "inputs": {
+    "AddApplicationAssetsInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "assetIds",
+        "type": "[Int!]!",
+        "required": true
+      }
+    ],
+    "BulkChangeIssueStatusInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "ids",
+        "type": "[ID!]!",
+        "required": true,
+        "description": "ID of the issue being changed"
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true,
+        "description": "Company Id of the issues"
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel!",
+        "required": true,
+        "description": "New status of the issue"
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "required": false,
+        "description": "Reason why this change of status is occurring"
+      },
+      {
+        "name": "riskAcceptedUntil",
+        "type": "ISO8601DateTime",
+        "required": false,
+        "description": "The deadline to resolve an issue marked as risk accepted."
+      }
+    ],
+    "BulkDeleteIssuesInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "ids",
+        "type": "[ID!]!",
+        "required": true,
+        "description": "IDs of the issues to be deleted"
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true,
+        "description": "Company Id of the issues"
+      }
+    ],
+    "BulkDeleteProjectInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "ids",
+        "type": "[ID!]!",
+        "required": true
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "BulkUpdateProjectStatusInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "ids",
+        "type": "[ID!]!",
+        "required": true
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "projectStatus",
+        "type": "NewProjectStatusEnum!",
+        "required": true
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "CancelPentestExecutionInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "ChangeIssueStatusInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true,
+        "description": "ID of the issue being changed"
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel!",
+        "required": true,
+        "description": "New status of the issue"
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "required": false,
+        "description": "Reason why this change of status is occurring"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Control sync id for integration"
+      },
+      {
+        "name": "externalAuthorIdentifier",
+        "type": "String",
+        "required": false,
+        "description": "External identifier (email) of the user who fixed the issue"
+      },
+      {
+        "name": "riskAcceptedUntil",
+        "type": "ISO8601DateTime",
+        "required": false,
+        "description": "The deadline to resolve an issue marked as risk accepted."
+      },
+      {
+        "name": "evidenceBlobSignedIds",
+        "type": "[String!]",
+        "required": false,
+        "description": "Blob signed_ids previously uploaded via generateEntityFileUploadUrl(entityType: ISSUE). Files are attached to the IssueStatusHistory created by this mutation."
+      }
+    ],
+    "CreateApplicationInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "String!",
+        "required": true,
+        "description": "Application name"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false,
+        "description": "Application description"
+      },
+      {
+        "name": "url",
+        "type": "String",
+        "required": false,
+        "description": "Primary URL for the application"
+      },
+      {
+        "name": "assetIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "Asset IDs to include in this application"
+      }
+    ],
+    "CreateAssetInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "assetType",
+        "type": "AssetTypeList",
+        "required": false
+      },
+      {
+        "name": "assetsTagList",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "audience",
+        "type": "AssetAudience",
+        "required": false
+      },
+      {
+        "name": "architectureType",
+        "type": "AssetArch",
+        "required": false
+      },
+      {
+        "name": "criticity",
+        "type": "AssetSeverity",
+        "required": false
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "dataClassification",
+        "type": "[DataClassification!]",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "developmentModel",
+        "type": "AssetDevelopmentModel",
+        "required": false
+      },
+      {
+        "name": "developmentTeam",
+        "type": "AssetDevelopmentTeam",
+        "required": false
+      },
+      {
+        "name": "environmentList",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "integrationIds",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "lifeCycle",
+        "type": "AssetLifeCycle",
+        "required": false
+      },
+      {
+        "name": "name",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "projectIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "scanType",
+        "type": "AssetScan",
+        "required": false
+      },
+      {
+        "name": "tecnologyList",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "teamIds",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "url",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "businessImpact",
+        "type": "BusinessImpactLevel",
+        "required": false
+      },
+      {
+        "name": "exploitability",
+        "type": "Exploitability",
+        "required": false
+      },
+      {
+        "name": "repoUrl",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "CreateNetworkVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "address",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "protocol",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "port",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "attackVector",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "RequirementInput": [
+      {
+        "name": "id",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "type",
+        "type": "RequirementTypeEnum",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "global",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "associatedProjectTypeId",
+        "type": "[ID!]",
+        "required": false
+      },
+      {
+        "name": "activities",
+        "type": "[ActivityInput!]",
+        "required": false
+      }
+    ],
+    "CreatePentestArtifactInput": [
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "applicationId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "scopeText",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "pentestType",
+        "type": "String!",
+        "required": true,
+        "description": "recurring or pontual"
+      },
+      {
+        "name": "assigneeEmail",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "domains",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "customHeaders",
+        "type": "JSON",
+        "required": false
+      },
+      {
+        "name": "inScope",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "outScope",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "scopeMode",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "extraPrompt",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "rateLimit",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "secretId",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "useRepository",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "repositories",
+        "type": "JSON",
+        "required": false
+      },
+      {
+        "name": "useDocumentation",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "docFormat",
+        "type": "PentestAiDocFormatEnum",
+        "required": false
+      },
+      {
+        "name": "docSourceUrl",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "docSourceFile",
+        "type": "Upload",
+        "required": false
+      },
+      {
+        "name": "size",
+        "type": "PentestAiSizeEnum",
+        "required": false
+      },
+      {
+        "name": "depth",
+        "type": "PentestAiDepthEnum",
+        "required": false
+      },
+      {
+        "name": "useScheduling",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "interval",
+        "type": "CalendarIntervalEnum",
+        "required": false
+      },
+      {
+        "name": "weekday",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "time",
+        "type": "ISO8601DateTime",
+        "required": false
+      },
+      {
+        "name": "scheduledAt",
+        "type": "ISO8601DateTime",
+        "required": false
+      },
+      {
+        "name": "day",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "hour",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "minute",
+        "type": "Int",
+        "required": false
+      }
+    ],
+    "CreatePentestExecutionInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "artifactId",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "CreatePentestRetestInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "projectId",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "CreateProjectInput": [
+      {
+        "name": "connectivity",
+        "type": "String",
+        "required": false,
+        "description": "Optional connectivity details, e.g. network or integration requirements."
+      },
+      {
+        "name": "endDate",
+        "type": "ISO8601Date",
+        "required": false,
+        "description": "Optional end date for the project."
+      },
+      {
+        "name": "estimatedHours",
+        "type": "String",
+        "required": false,
+        "description": "Optional estimated hours required to complete the project."
+      },
+      {
+        "name": "goal",
+        "type": "String!",
+        "required": true,
+        "description": "The main objective or goal of the project."
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true,
+        "description": "A short label or title for the project."
+      },
+      {
+        "name": "scope",
+        "type": "String!",
+        "required": true,
+        "description": "The scope of the project, defining its boundaries and focus."
+      },
+      {
+        "name": "startDate",
+        "type": "ISO8601Date!",
+        "required": true,
+        "description": "The start date of the project."
+      },
+      {
+        "name": "students",
+        "type": "Int",
+        "required": false,
+        "description": "Optional number of students involved in the project."
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true,
+        "description": "The ID of the company associated with the project."
+      },
+      {
+        "name": "typeId",
+        "type": "Int!",
+        "required": true,
+        "description": "The ID representing the type of the project."
+      },
+      {
+        "name": "accessPortalUserEmails",
+        "type": "[String!]",
+        "required": false,
+        "description": "List of portal user emails that have access to the project."
+      },
+      {
+        "name": "allocatedPortalUserEmails",
+        "type": "[String!]",
+        "required": false,
+        "description": "List of portal user emails allocated to work on the project."
+      },
+      {
+        "name": "assetsIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "Array of asset IDs associated with the project."
+      },
+      {
+        "name": "attachments",
+        "type": "[AttachmentInput!]",
+        "required": false,
+        "description": "List of attachments for the project."
+      },
+      {
+        "name": "credentialsIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "Array of credential IDs used for accessing project resources."
+      },
+      {
+        "name": "playbooksIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "List of playbook IDs that provide guidelines for the project."
+      },
+      {
+        "name": "projectScopeUrls",
+        "type": "[String!]",
+        "required": false,
+        "description": "List of URLs that detail the project scope."
+      },
+      {
+        "name": "tags",
+        "type": "[String!]",
+        "required": false,
+        "description": "Array of tags for categorizing or filtering the project."
+      },
+      {
+        "name": "teamsIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "List of team IDs associated with the project."
+      },
+      {
+        "name": "secretIds",
+        "type": "[String!]",
+        "required": false,
+        "description": "List of secrets associated with the project."
+      },
+      {
+        "name": "attackChain",
+        "type": "String",
+        "required": false,
+        "description": "Mermaid diagram syntax for attack chain visualization."
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "CreateProjectRequirementInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "projectId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "activities",
+        "type": "[ActivityAttributeInput!]",
+        "required": false
+      }
+    ],
+    "CreateSourceCodeVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "codeSnippet",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "vulnerableLine",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "firstLine",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "fileName",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "source",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "sink",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "commitRef",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "deployId",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "CreateThreatModelArtifactInput": [
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "scopeText",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "assigneeEmail",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "CreateThreatModelArtifactVersionInput": [
+      {
+        "name": "artifactId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "architectureItems",
+        "type": "JSON!",
+        "required": true
+      },
+      {
+        "name": "requirementIds",
+        "type": "[ID!]",
+        "required": false
+      },
+      {
+        "name": "diagramType",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "diagramContent",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "sourceProjectId",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "notes",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "CreateThreatModelingRequirementsInput": [
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "requirements",
+        "type": "[ThreatModelingRequirementItemInput!]!",
+        "required": true
+      }
+    ],
+    "CreateTicketInput": [
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "type",
+        "type": "TicketTypeEnum!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "priority",
+        "type": "TicketPriorityEnum",
+        "required": false
+      },
+      {
+        "name": "impact",
+        "type": "TicketImpactEnum",
+        "required": false
+      },
+      {
+        "name": "attachments",
+        "type": "[Upload!]",
+        "required": false
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "CreateWebVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "request",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "response",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "method",
+        "type": "HTTPMethod!",
+        "required": true
+      },
+      {
+        "name": "scheme",
+        "type": "SchemeCategory!",
+        "required": true
+      },
+      {
+        "name": "url",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "port",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "parameters",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "MarkIssueAsAnalyzedInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "issueId",
+        "type": "ID!",
+        "required": true,
+        "description": "ID of the issue to mark as analyzed"
+      },
+      {
+        "name": "companyId",
+        "type": "ID!",
+        "required": true,
+        "description": "Company ID of the issue"
+      }
+    ],
+    "RemoveApplicationAssetsInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "assetIds",
+        "type": "[Int!]!",
+        "required": true
+      }
+    ],
+    "StartConvisoDastInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "assetId",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "SubmitPentestRetestResultInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "executionId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "vulnerabilityId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "fixed",
+        "type": "Boolean!",
+        "required": true
+      },
+      {
+        "name": "evidence",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "UpdateApplicationInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "name",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "url",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "assetIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "Replaces the linked assets entirely with this list"
+      }
+    ],
+    "UpdateAssetInput": [
+      {
+        "name": "assetType",
+        "type": "AssetTypeList",
+        "required": false
+      },
+      {
+        "name": "assetsTagList",
+        "type": "[String!]",
+        "required": false,
+        "description": "List of tags associated with the asset"
+      },
+      {
+        "name": "audience",
+        "type": "AssetAudience",
+        "required": false
+      },
+      {
+        "name": "architectureType",
+        "type": "AssetArch",
+        "required": false
+      },
+      {
+        "name": "criticity",
+        "type": "AssetSeverity",
+        "required": false
+      },
+      {
+        "name": "companyId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "dataClassification",
+        "type": "[DataClassification!]",
+        "required": false,
+        "description": "Data classification levels associated with the asset"
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false,
+        "description": "Detailed description of the asset"
+      },
+      {
+        "name": "developmentModel",
+        "type": "AssetDevelopmentModel",
+        "required": false
+      },
+      {
+        "name": "developmentTeam",
+        "type": "AssetDevelopmentTeam",
+        "required": false
+      },
+      {
+        "name": "environmentList",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "integrationIds",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "lifeCycle",
+        "type": "AssetLifeCycle",
+        "required": false
+      },
+      {
+        "name": "name",
+        "type": "String!",
+        "required": true,
+        "description": "The name of the asset"
+      },
+      {
+        "name": "projectIds",
+        "type": "[Int!]",
+        "required": false,
+        "description": "The projects associated with the asset"
+      },
+      {
+        "name": "scanType",
+        "type": "AssetScan",
+        "required": false
+      },
+      {
+        "name": "tecnologyList",
+        "type": "[String!]",
+        "required": false,
+        "description": "Technologies used in the asset (e.g., languages, frameworks)"
+      },
+      {
+        "name": "teamIds",
+        "type": "[String!]",
+        "required": false,
+        "description": "Teams associated with the asset"
+      },
+      {
+        "name": "url",
+        "type": "String",
+        "required": false,
+        "description": "URL where the asset is accessible"
+      },
+      {
+        "name": "businessImpact",
+        "type": "BusinessImpactLevel",
+        "required": false,
+        "description": "Business impact level of the asset"
+      },
+      {
+        "name": "exploitability",
+        "type": "Exploitability",
+        "required": false,
+        "description": "Exploitability level of the asset"
+      },
+      {
+        "name": "threat",
+        "type": "ThreatLevel",
+        "required": false,
+        "description": "Threat level associated with the asset"
+      },
+      {
+        "name": "repoUrl",
+        "type": "String",
+        "required": false,
+        "description": "Repository URL of the asset's source code"
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      }
+    ],
+    "UpdateIssueAssigneesInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "issueId",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "assigneeEmails",
+        "type": "[String!]!",
+        "required": true
+      }
+    ],
+    "UpdateNetworkVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "address",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "protocol",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "port",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "attackVector",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "UpdatePentestArtifactInput": [
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "scopeText",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "pentestType",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "assigneeEmail",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "applicationId",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "domains",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "customHeaders",
+        "type": "JSON",
+        "required": false
+      },
+      {
+        "name": "inScope",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "outScope",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "scopeMode",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "extraPrompt",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "rateLimit",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "secretId",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "useRepository",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "repositories",
+        "type": "JSON",
+        "required": false
+      },
+      {
+        "name": "useDocumentation",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "docFormat",
+        "type": "PentestAiDocFormatEnum",
+        "required": false
+      },
+      {
+        "name": "docSourceUrl",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "docSourceFile",
+        "type": "Upload",
+        "required": false
+      },
+      {
+        "name": "size",
+        "type": "PentestAiSizeEnum",
+        "required": false
+      },
+      {
+        "name": "depth",
+        "type": "PentestAiDepthEnum",
+        "required": false
+      },
+      {
+        "name": "useScheduling",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "interval",
+        "type": "CalendarIntervalEnum",
+        "required": false
+      },
+      {
+        "name": "weekday",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "time",
+        "type": "ISO8601DateTime",
+        "required": false
+      },
+      {
+        "name": "scheduledAt",
+        "type": "ISO8601DateTime",
+        "required": false
+      },
+      {
+        "name": "day",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "hour",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "minute",
+        "type": "Int",
+        "required": false
+      }
+    ],
+    "UpdateProjectInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "assetsIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "companyId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "startDate",
+        "type": "ISO8601Date",
+        "required": false
+      },
+      {
+        "name": "endDate",
+        "type": "ISO8601Date",
+        "required": false
+      },
+      {
+        "name": "comment",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "connectivity",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "credentialsIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "estimatedHours",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "label",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "goal",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "playbooksIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "scope",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "students",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "tags",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "teamsIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "typeId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "projectScopeUrls",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "attachments",
+        "type": "[AttachmentInput!]",
+        "required": false
+      },
+      {
+        "name": "allocatedPortalUserEmails",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "accessPortalUserEmails",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "customExecutiveSummary",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "activeCustomExecutiveSummary",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "customFinalConsiderations",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "activeCustomFinalConsiderations",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "secretIds",
+        "type": "[String!]",
+        "required": false
+      },
+      {
+        "name": "attackChain",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "UpdateProjectRequirementInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "activities",
+        "type": "[ActivityAttributeInput!]",
+        "required": false
+      }
+    ],
+    "UpdateProjectStatusInput": [
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "projectStatus",
+        "type": "NewProjectStatusEnum!",
+        "required": true
+      },
+      {
+        "name": "reason",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "UpdateSourceCodeVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "codeSnippet",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "vulnerableLine",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "firstLine",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "fileName",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "source",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "sink",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "commitRef",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "deployId",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "UpdateThreatModelArtifactInput": [
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "scopeText",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "assigneeEmail",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "UpdateWebVulnerabilityInput": [
+      {
+        "name": "assetId",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "title",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false,
+        "description": "CWE Category"
+      },
+      {
+        "name": "patterns",
+        "type": "[String!]",
+        "required": false,
+        "description": "OWASP Patterns"
+      },
+      {
+        "name": "controlSyncStatusId",
+        "type": "ID",
+        "required": false,
+        "description": "Identify with scan create this finding"
+      },
+      {
+        "name": "solution",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactLevel",
+        "type": "ImpactLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "probabilityLevel",
+        "type": "ProbabilityLevelCategory!",
+        "required": true
+      },
+      {
+        "name": "severity",
+        "type": "SeverityCategory!",
+        "required": true
+      },
+      {
+        "name": "summary",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "impactDescription",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "stepsToReproduce",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "compromisedEnvironment",
+        "type": "Boolean",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "status",
+        "type": "IssueStatusLabel",
+        "required": false
+      },
+      {
+        "name": "request",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "response",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "method",
+        "type": "HTTPMethod!",
+        "required": true
+      },
+      {
+        "name": "scheme",
+        "type": "SchemeCategory!",
+        "required": true
+      },
+      {
+        "name": "url",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "port",
+        "type": "Int!",
+        "required": true
+      },
+      {
+        "name": "parameters",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "id",
+        "type": "ID!",
+        "required": true
+      },
+      {
+        "name": "clientMutationId",
+        "type": "String",
+        "required": false,
+        "description": "A unique identifier for the client performing the mutation."
+      }
+    ],
+    "ActivityInput": [
+      {
+        "name": "id",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "description",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "typeId",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "item",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "category",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "actionPlan",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "vulnerabilityTemplateId",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "sort",
+        "type": "String",
+        "required": false
+      }
+    ],
+    "AttachmentInput": [
+      {
+        "name": "id",
+        "type": "ID",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "projectId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "issueId",
+        "type": "Int",
+        "required": false
+      },
+      {
+        "name": "allowedPortalUserIds",
+        "type": "[Int!]",
+        "required": false
+      },
+      {
+        "name": "archive",
+        "type": "Upload",
+        "required": false
+      }
+    ],
+    "ActivityAttributeInput": [
+      {
+        "name": "id",
+        "type": "ID",
+        "required": false,
+        "description": "ID for update/destroy (omit for create)"
+      },
+      {
+        "name": "label",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "description",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "reference",
+        "type": "String",
+        "required": false
+      },
+      {
+        "name": "sort",
+        "type": "Int",
+        "required": false
+      }
+    ],
+    "ThreatModelingRequirementItemInput": [
+      {
+        "name": "label",
+        "type": "String!",
+        "required": true
+      },
+      {
+        "name": "capecIds",
+        "type": "[ID!]!",
+        "required": true
+      },
+      {
+        "name": "requirementId",
+        "type": "ID",
+        "required": false
+      }
+    ]
+  },
+  "enums": {
+    "AssetArch": [
+      "agile",
+      "microservices",
+      "monolithic",
+      "serverless",
+      "none"
+    ],
+    "AssetAudience": [
+      "external",
+      "internal",
+      "internal_and_external",
+      "none"
+    ],
+    "AssetDevelopmentModel": [
+      "agile",
+      "none",
+      "third_party",
+      "waterfall"
+    ],
+    "AssetDevelopmentTeam": [
+      "external",
+      "internal",
+      "internal_and_external",
+      "none"
+    ],
+    "AssetLifeCycle": [
+      "production",
+      "homologation",
+      "certification",
+      "discontinued",
+      "none"
+    ],
+    "AssetScan": [
+      "Server",
+      "DAST",
+      "SAST",
+      "Container",
+      "None"
+    ],
+    "AssetSeverity": [
+      "high",
+      "critical",
+      "low",
+      "none"
+    ],
+    "AssetTypeList": [
+      "none",
+      "client_server",
+      "api",
+      "domain",
+      "progressive_web_app",
+      "web",
+      "native_mobile",
+      "hybrid_mobile",
+      "database",
+      "dmz",
+      "legacy",
+      "cluster",
+      "node"
+    ],
+    "BusinessImpactLevel": [
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "NOT_DEFINED"
+    ],
+    "CalendarIntervalEnum": [
+      "MONTHLY",
+      "QUARTERLY",
+      "NONE",
+      "WEEKLY"
+    ],
+    "DataClassification": [
+      "PUBLIC",
+      "INTERNAL",
+      "CONFIDENTIAL",
+      "SENSITIVE",
+      "CRITICAL",
+      "PERSONALLY_IDENTIFIABLE_INFORMATION",
+      "PAYMENT_CARD_INDUSTRY",
+      "NON_SENSITIVE",
+      "NOT_DEFINED"
+    ],
+    "Exploitability": [
+      "INTERNET_FACING",
+      "INTERNAL",
+      "NOT_DEFINED"
+    ],
+    "HTTPMethod": [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+      "HEAD",
+      "TRACE",
+      "CONNECT",
+      "UNKNOWN"
+    ],
+    "ImpactLevelCategory": [
+      "LOW",
+      "MEDIUM",
+      "HIGH"
+    ],
+    "IssueStatusLabel": [
+      "CREATED",
+      "DRAFT",
+      "IDENTIFIED",
+      "IN_PROGRESS",
+      "AWAITING_VALIDATION",
+      "FIX_ACCEPTED",
+      "RISK_ACCEPTED",
+      "FALSE_POSITIVE",
+      "SUPPRESSED"
+    ],
+    "NewProjectStatusEnum": [
+      "ANALYSIS",
+      "DONE",
+      "PLANNED",
+      "DISCONTINUED",
+      "PAUSED"
+    ],
+    "PentestAiDepthEnum": [
+      "STANDARD",
+      "DEEP",
+      "FAST"
+    ],
+    "PentestAiDocFormatEnum": [
+      "GRAPHQL",
+      "SOAP",
+      "OPENAPI",
+      "POSTMAN"
+    ],
+    "PentestAiSizeEnum": [
+      "MEDIUM",
+      "SMALL",
+      "LARGE"
+    ],
+    "ProbabilityLevelCategory": [
+      "LOW",
+      "MEDIUM",
+      "HIGH"
+    ],
+    "RequirementTypeEnum": [
+      "Tests",
+      "Procedures",
+      "Requirements"
+    ],
+    "SchemeCategory": [
+      "HTTP",
+      "HTTPS",
+      "WS",
+      "WSS",
+      "UNKNOWN"
+    ],
+    "SeverityCategory": [
+      "NOTIFICATION",
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "ThreatLevel": [
+      "NOTIFICATION",
+      "NONE",
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "TicketImpactEnum": [
+      "LOW",
+      "MEDIUM",
+      "HIGH"
+    ],
+    "TicketPriorityEnum": [
+      "P1",
+      "P2",
+      "P3"
+    ],
+    "TicketTypeEnum": [
+      "BUG",
+      "FEATURE_REQUEST",
+      "PROJECT_REQUEST",
+      "SUPPORT_REQUEST"
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { GraphQLClient } from './graphql_client.js';
+import { listMutations, describeMutation } from './mutations.js';
 
 class FeedGateway {
   constructor(graphql_api_key = '') {
@@ -82,6 +83,115 @@ class FeedGateway {
 
   async get_overall_risk_score_history(company_id) {
     return this.graphql.get_overall_risk_score_history(company_id);
+  }
+
+  // --- Mutations -------------------------------------------------------------
+
+  // Discovery/introspection are pure (no network) — answered straight from the catalog.
+  list_mutations(opts = {}) {
+    return listMutations(opts);
+  }
+
+  describe_mutation(name) {
+    return describeMutation(name);
+  }
+
+  async execute_mutation(name, variables = {}, returnFields = null) {
+    return this.graphql.executeMutation(name, variables, returnFields);
+  }
+
+  async change_issue_status(a = {}) {
+    return this.graphql.change_issue_status(a);
+  }
+
+  async create_source_code_vulnerability(a = {}) {
+    return this.graphql.create_source_code_vulnerability(a);
+  }
+
+  async create_project(a = {}) {
+    return this.graphql.create_project(a);
+  }
+
+  async create_asset(a = {}) {
+    return this.graphql.create_asset(a);
+  }
+
+  async create_ticket(a = {}) {
+    return this.graphql.create_ticket(a);
+  }
+
+  async run_dast(a = {}) {
+    return this.graphql.run_dast(a);
+  }
+
+  async trigger_pentest(a = {}) {
+    return this.graphql.trigger_pentest(a);
+  }
+
+  async create_pentest_artifact(a = {}) {
+    return this.graphql.create_pentest_artifact(a);
+  }
+
+  // --- Reads (curated query tools) -------------------------------------------
+
+  async get_tickets(company_id, opts = {}) {
+    return this.graphql.get_tickets(company_id, opts);
+  }
+
+  async get_ticket(company_id, ticket_id) {
+    return this.graphql.get_ticket(company_id, ticket_id);
+  }
+
+  async get_requirements(scope_id, opts = {}) {
+    return this.graphql.get_requirements(scope_id, opts);
+  }
+
+  async get_requirement(company_id, requirement_id) {
+    return this.graphql.get_requirement(company_id, requirement_id);
+  }
+
+  async get_project_requirements(project_id) {
+    return this.graphql.get_project_requirements(project_id);
+  }
+
+  async get_applications(company_id, search = null) {
+    return this.graphql.get_applications(company_id, search);
+  }
+
+  async get_application(company_id, application_id) {
+    return this.graphql.get_application(company_id, application_id);
+  }
+
+  async get_scan_histories(company_id, opts = {}) {
+    return this.graphql.get_scan_histories(company_id, opts);
+  }
+
+  async get_asset_scans_count(company_id) {
+    return this.graphql.get_asset_scans_count(company_id);
+  }
+
+  async get_sbom_components(company_id, opts = {}) {
+    return this.graphql.get_sbom_components(company_id, opts);
+  }
+
+  async get_pentest_artifacts(company_id, opts = {}) {
+    return this.graphql.get_pentest_artifacts(company_id, opts);
+  }
+
+  async get_pentest_artifact(artifact_id) {
+    return this.graphql.get_pentest_artifact(artifact_id);
+  }
+
+  async get_pentest_execution(execution_id) {
+    return this.graphql.get_pentest_execution(execution_id);
+  }
+
+  async get_threat_model_artifacts(company_id, opts = {}) {
+    return this.graphql.get_threat_model_artifacts(company_id, opts);
+  }
+
+  async get_threat_model_artifact(artifact_id) {
+    return this.graphql.get_threat_model_artifact(artifact_id);
   }
 }
 
