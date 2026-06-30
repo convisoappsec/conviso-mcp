@@ -25,61 +25,47 @@ The server exposes the following tools to the LLM:
 | **Utilities** | `create_project_url` | Generates a direct link to the specific project on the Conviso Platform. |
 | **Metrics** | `get_mttr_over_time` | Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level. |
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
-| **Tickets** ⁽ᴺᵒᵈᵉ⁾ | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
-| **Requirements** ⁽ᴺᵒᵈᵉ⁾ | `get_requirements` / `get_requirement` / `get_project_requirements` | Browse security requirements/checklists. |
-| **Applications** ⁽ᴺᵒᵈᵉ⁾ | `get_applications` / `get_application` | List or fetch applications and their assets. |
-| **Scans** ⁽ᴺᵒᵈᵉ⁾ | `get_scan_histories` / `get_asset_scans_count` | Scan execution history and coverage counts. |
-| **Supply chain** ⁽ᴺᵒᵈᵉ⁾ | `get_sbom_components` | SBOM / dependency components per company. |
-| **AI-Pentest** ⁽ᴺᵒᵈᵉ⁾ | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
-| **Threat Modeling** ⁽ᴺᵒᵈᵉ⁾ | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
-| **Write engine** ⁽ᴺᵒᵈᵉ⁾ | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run any of the 37 allowlisted mutations. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `change_issue_status` | Change an issue/vulnerability status. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `create_source_code_vulnerability` | Create a manual source-code vulnerability. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `create_project` | Create a project. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `create_asset` | Create an asset. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `create_ticket` | Open a ticket. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `run_dast` | Start a Conviso DAST scan on an asset. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `trigger_pentest` | Trigger an AI-Pentest execution from an artifact. |
-| **Write (curated)** ⁽ᴺᵒᵈᵉ⁾ | `create_pentest_artifact` | Create an AI-Pentest artifact (scope/config). |
+| **Tickets**  | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
+| **Requirements**  | `get_requirements` / `get_requirement` / `get_project_requirements` | Browse security requirements/checklists. |
+| **Applications** | `get_applications` / `get_application` | List or fetch applications and their assets. |
+| **Scans**  | `get_scan_histories` / `get_asset_scans_count` | Scan execution history and coverage counts. |
+| **Supply chain**  | `get_sbom_components` | SBOM / dependency components per company. |
+| **AI-Pentest**  | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
+| **Threat Modeling**  | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
+| **Writes — engine**  | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run the permitted write operations below. |
+| **Writes — Issues**  | `execute_mutation` | Create, update, delete and change status of vulnerabilities/issues. |
+| **Writes — Assets**  | `execute_mutation` | Create and update assets; run a DAST scan. |
+| **Writes — Tickets**  | `execute_mutation` | Create tickets. |
+| **Writes — Projects** | `execute_mutation` | Create, update, change status and remove projects. |
+| **Writes — Requirements**  | `execute_mutation` | Create and update requirements. |
+| **Writes — AI-Pentest**  | `execute_mutation` | Create artifacts, schedule, trigger executions and retests. |
+| **Writes — Applications**  | `execute_mutation` | Create and update applications. |
+| **Writes — Threat Modeling**  | `execute_mutation` | Create and update threat-model artifacts and versions. |
 
 ## ✍️ Write Operations (Mutations)
 
 > Available in the **Node** server. The Python server remains read-only for now.
 
-The Conviso GraphQL schema defines hundreds of mutations, but the MCP intentionally exposes
-only an **allowlisted subset** (see `node/src/conviso_mcp/operation_allowlist.js`) covering
-the client-facing capabilities below. Every other mutation is excluded from the catalog and
-cannot be reached by any tool.
+Write operations are limited to the client-facing capabilities below — everything else the
+platform supports is intentionally not exposed.
 
-Allowlisted domains: **Issues/Vulnerabilities** (create/update/delete/change status),
+Available domains: **Issues/Vulnerabilities** (create/update/delete/change status),
 **Assets** (create/update + run DAST), **Tickets** (create), **Projects**
 (create/update/status/remove), **Requirements** (create/update), **AI-Pentest**
 (artifact/schedule/trigger/retest), **Applications** (create/update), **Threat Modeling**
 (create/update/version). Supply chain and Scans are read-only.
 
-**Generic engine** — discover → describe → execute, covering the whole allowlist:
+Use the discover → describe → execute workflow:
 
-1. `list_mutations({ search: "issue" })` — find the mutation you need.
-2. `describe_mutation({ name: "changeIssueStatus" })` — get its input fields, which are
-   required, allowed enum values, and the fields returned by default.
+1. `list_mutations({ search: "issue" })` — find the operation you need.
+2. `describe_mutation({ name: "changeIssueStatus" })` — get its input fields (required,
+   allowed enum values) and the fields returned by default.
 3. `execute_mutation({ name: "changeIssueStatus", variables: { input: { id: "123", status: "FALSE_POSITIVE", reason: "duplicate" } } })`
    — run it. Optionally pass `return_fields` to override the returned selection set.
 
-**Curated shortcuts** wrap the highest-frequency writes with typed arguments
-(`change_issue_status`, `create_source_code_vulnerability`, `create_project`, `create_asset`,
-`create_ticket`, `run_dast`, `trigger_pentest`, `create_pentest_artifact`). Each also accepts
-an `extra` object merged into the GraphQL input for any advanced field not in the typed
-signature.
-
-**Safety:** mutations are writes. `execute_mutation` is annotated `destructiveHint: true`,
-and the catalog flags `delete`/`bulk`/`remove`/`cancel`/`revoke` operations as destructive —
-MCP clients surface these for confirmation. Confirm intent before running destructive or
-bulk operations.
-
-**Schema source:** the engine is driven by `node/src/conviso_mcp/mutations_catalog.json`,
-generated from `sdl.gql` (filtered by the allowlist) via `npm run gen:mutations`. Regenerate
-it whenever the allowlist or the Conviso GraphQL schema changes (`graphql` is a dev-only
-dependency used solely by the generator).
+**Safety:** these are writes. `execute_mutation` is annotated `destructiveHint: true`, and
+delete/bulk/remove/cancel/revoke operations are flagged destructive — MCP clients surface
+these for confirmation. Confirm intent before running destructive or bulk operations.
 
 ## 🚀 Installation and Configuration
 

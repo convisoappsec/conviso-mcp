@@ -33,15 +33,18 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 | **Supply chain** | `get_sbom_components` | SBOM / dependency components per company. |
 | **AI-Pentest** | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
 | **Threat Modeling** | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
-| **Write engine** | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run any of the allowlisted mutations. |
-| **Write (curated)** | `change_issue_status` | Change an issue/vulnerability status. |
-| **Write (curated)** | `create_source_code_vulnerability` | Create a manual source-code vulnerability. |
-| **Write (curated)** | `create_project` / `create_asset` / `create_ticket` | Create a project, asset or ticket. |
-| **Write (curated)** | `run_dast` | Start a Conviso DAST scan on an asset. |
-| **Write (curated)** | `trigger_pentest` / `create_pentest_artifact` | Trigger an AI-Pentest execution / create its artifact. |
+| **Writes — engine** | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run the permitted write operations below. |
+| **Writes — Issues** | `execute_mutation` | Create, update, delete and change status of vulnerabilities/issues. |
+| **Writes — Assets** | `execute_mutation` | Create and update assets; run a DAST scan. |
+| **Writes — Tickets** | `execute_mutation` | Create tickets. |
+| **Writes — Projects** | `execute_mutation` | Create, update, change status and remove projects. |
+| **Writes — Requirements** | `execute_mutation` | Create and update requirements. |
+| **Writes — AI-Pentest** | `execute_mutation` | Create artifacts, schedule, trigger executions and retests. |
+| **Writes — Applications** | `execute_mutation` | Create and update applications. |
+| **Writes — Threat Modeling** | `execute_mutation` | Create and update threat-model artifacts and versions. |
 
-> Write tools are **Node-only**. Mutations are restricted to an allowlist
-> (`src/conviso_mcp/operation_allowlist.js`); see the root `README.md` for the write workflow.
+> Write tools are **Node-only** and limited to the supported client-facing capabilities; see
+> the root `README.md` for the write workflow.
 
 ## 🚀 Installation and Configuration (Node.js bundle)
 
