@@ -26,12 +26,28 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 | **Utilities** | `get_today_date` | Return current day/month/year (utility). |
 | **Metrics** | `get_mttr_over_time` | Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level. |
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
+| **Tickets** | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
+| **Requirements** | `get_requirements` / `get_requirement` / `get_project_requirements` | Browse security requirements/checklists. |
+| **Applications** | `get_applications` / `get_application` | List or fetch applications and their assets. |
+| **Scans** | `get_scan_histories` / `get_asset_scans_count` | Scan execution history and coverage counts. |
+| **Supply chain** | `get_sbom_components` | SBOM / dependency components per company. |
+| **AI-Pentest** | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
+| **Threat Modeling** | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
+| **Write engine** | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run any of the allowlisted mutations. |
+| **Write (curated)** | `change_issue_status` | Change an issue/vulnerability status. |
+| **Write (curated)** | `create_source_code_vulnerability` | Create a manual source-code vulnerability. |
+| **Write (curated)** | `create_project` / `create_asset` / `create_ticket` | Create a project, asset or ticket. |
+| **Write (curated)** | `run_dast` | Start a Conviso DAST scan on an asset. |
+| **Write (curated)** | `trigger_pentest` / `create_pentest_artifact` | Trigger an AI-Pentest execution / create its artifact. |
+
+> Write tools are **Node-only**. Mutations are restricted to an allowlist
+> (`src/conviso_mcp/operation_allowlist.js`); see the root `README.md` for the write workflow.
 
 ## 🚀 Installation and Configuration (Node.js bundle)
 
 ### Prerequisites
 
-* Node.js 18 or later.
+* Node.js 20.10 or later.
 * A Conviso Platform API Key (obtained from your profile settings).
 * An MCP-compatible client (e.g., Claude Desktop, Cursor, etc.).
 
