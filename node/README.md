@@ -140,6 +140,11 @@ docker build -t conviso-mcp-node-image .
 
 ---
 
-## Privacy
+## Privacy Policy
 
-This bundle references the project's privacy policy. See `node/manifest.json` privacy_policies for details.
+This connector communicates only with the Conviso Platform API (`https://app.convisoappsec.com`)
+using the API key you provide. It does not collect, store, or share your data with any third
+party — requests and responses stay between your MCP client and the Conviso Platform. Error
+logs go to `stderr` only.
+
+Full privacy policy: https://www.iubenda.com/privacy-policy/55589285

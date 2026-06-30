@@ -249,3 +249,11 @@ This connector handles sensitive security data (vulnerabilities).
 * **Scope:** The server operates using the permissions assigned to the provided API Key.
 * **Code Snippets:** The `get_issue` tool may return vulnerable code snippets if explicitly requested for AI analysis.
 * **Logs:** Error logs are directed to `stderr` to prevent interference with the MCP communication protocol.
+
+## Privacy Policy
+
+This connector communicates only with the Conviso Platform API (`https://app.convisoappsec.com`)
+using the API key you provide. It does not collect, store, or share your data with any third
+party — requests and responses stay between your MCP client and the Conviso Platform.
+
+Full privacy policy: https://docs.convisoappsec.com
