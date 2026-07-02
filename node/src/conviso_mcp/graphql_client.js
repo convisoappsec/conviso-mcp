@@ -1,4 +1,5 @@
 import axios from 'axios';
+import https from 'node:https';
 import * as F from './filters.js';
 import { buildMutationQuery } from './mutations.js';
 
@@ -450,6 +451,16 @@ export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts =
   return { page, limit, params, sortBy, descending };
 }
 
+// Shared HTTP client: keep-alive reuses the TLS connection across the many sequential
+// calls an agent session makes; the timeout stops a hung upstream from hanging a tool
+// call (and the MCP client) forever.
+const httpClient = axios.create({
+  timeout: 30_000,
+  httpsAgent: new https.Agent({ keepAlive: true }),
+});
+
+const RETRYABLE_STATUS = new Set([429, 502, 503]);
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -462,16 +473,30 @@ class GraphQLClient {
   }
 
   async execute(query, variables = {}) {
-    const payload = { query, variables };
-
-    let response;
-
+    // Queries are idempotent — retry a transient failure once. Mutations never retry.
+    const isRead = /^\s*query\b/i.test(query);
     try {
-      response = await axios.post(this.endpoint, payload, { headers: this.headers });
+      return await this.#post(query, variables);
+    } catch (err) {
+      const transient = RETRYABLE_STATUS.has(err.status) || err.code === 'ECONNRESET';
+      if (!isRead || !transient) throw err;
+      await new Promise((r) => setTimeout(r, 300));
+      return this.#post(query, variables);
+    }
+  }
+
+  async #post(query, variables) {
+    let response;
+    try {
+      response = await httpClient.post(this.endpoint, { query, variables }, { headers: this.headers });
     } catch (err) {
       if (err.response) {
+        const status = err.response.status;
         const e = new Error('GraphQL request failed');
-        e.status = err.response.status;
+        e.status = status;
+        if (status === 401 || status === 403) {
+          e.authHint = 'Authentication failed — check that CONVISO_API_KEY is set to a valid Conviso Platform API key.';
+        }
         throw e;
       }
 
@@ -481,7 +506,7 @@ class GraphQLClient {
         throw e;
       }
 
-      if (err.code === 'ETIMEDOUT') {
+      if (err.code === 'ETIMEDOUT' || err.code === 'ECONNABORTED') {
         const e = new Error('Upstream request timeout');
         e.status = 504;
         throw e;
@@ -506,18 +531,6 @@ class GraphQLClient {
   async getIssues(companyId, opts = {}) {
     const variables = buildIssuesVariables(companyId, opts.page || 1, opts.limit || 10, opts);
     return this.execute(ISSUES_QUERY, variables);
-  }
-
-  // Backward-compatible positional-argument wrapper used by existing FeedGateway callers.
-  async get_issues(company_id, search, page = 1, limit = 1, project_id = null, issue_ids = [], asset_ids = []) {
-    return this.getIssues(company_id, {
-      page,
-      limit,
-      search,
-      projectId: project_id,
-      issueIds: issue_ids,
-      assetIds: asset_ids,
-    });
   }
 
   async get_issue_by_id(issue_id, return_snippets = false) {
@@ -684,56 +697,6 @@ class GraphQLClient {
         }
         `;
     const variables = { companyId: company_id };
-    return this.execute(query, variables);
-  }
-
-  async generate_project_report(project_id, language = 'en', vulnerability_criticity = null, vulnerability_statuses = null, requirements = true, evidences = true) {
-    const query = `
-        query GenerateProjectReport(
-            $projectId: ID!,
-            $language: String!,
-            $vulnerabilityCriticity: [SeverityCategory!],
-            $vulnerabilityStatuses: [IssueStatusLabel!],
-            $requirements: Boolean!,
-            $evidences: Boolean!
-        ) {
-            generateProjectReport(
-                projectId: $projectId,
-                language: $language,
-                vulnerabilityCriticity: $vulnerabilityCriticity,
-                vulnerabilityStatuses: $vulnerabilityStatuses,
-                requirements: $requirements,
-                evidences: $evidences
-            ) {
-                id
-                reportUrl
-                status
-            }
-        }
-        `;
-    const variables = {
-      projectId: project_id,
-      language,
-      vulnerabilityCriticity: vulnerability_criticity || ["CRITICAL", "HIGH", "MEDIUM", "LOW", "NOTIFICATION"],
-      vulnerabilityStatuses: vulnerability_statuses || ["IDENTIFIED", "IN_PROGRESS", "AWAITING_VALIDATION", "FIX_ACCEPTED", "RISK_ACCEPTED", "FALSE_POSITIVE"],
-      requirements,
-      evidences
-    };
-    return this.execute(query, variables);
-  }
-
-  async generate_project_report_progress(project_id, report_id) {
-    const query = `
-        query GenerateProjectReport($projectId: ID!, $reportId: ID!) {
-            projectReport(projectId: $projectId, reportId: $reportId) {
-                id
-                progress
-                reportUrl
-                status
-            }
-        }
-        `;
-    const variables = { projectId: project_id, reportId: report_id };
     return this.execute(query, variables);
   }
 

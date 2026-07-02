@@ -27,3 +27,19 @@ test('variables pass through untouched', () => {
 test('unknown mutation throws (whitelist)', () => {
   assert.throws(() => buildMutationQuery('nopeNotReal'), /Unknown mutation/);
 });
+
+test('bare input fields are auto-wrapped in { input }', () => {
+  const { variables } = buildMutationQuery('changeIssueStatus', { id: 5, status: 'IDENTIFIED' });
+  assert.deepEqual(variables, { input: { id: 5, status: 'IDENTIFIED' } });
+});
+
+test('already-wrapped variables are not double-wrapped', () => {
+  const vars = { input: { id: 5, status: 'IDENTIFIED' } };
+  const { variables } = buildMutationQuery('changeIssueStatus', vars);
+  assert.deepEqual(variables, vars);
+});
+
+test('empty variables are not wrapped', () => {
+  const { variables } = buildMutationQuery('changeIssueStatus', {});
+  assert.deepEqual(variables, {});
+});

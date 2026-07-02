@@ -12,11 +12,9 @@ The server exposes the following tools to the LLM:
 | --- | --- | --- |
 | **General** | `get_companies` | List companies and associated IDs. |
 | **General** | `get_company_info` | Plan details, integrations, and company branding info. |
-| **Vulnerabilities** | `get_issues` | List vulnerabilities by company or project. |
+| **Vulnerabilities** | `get_issues` | List vulnerabilities for a company, filterable by project, asset, severity, status, dates and more. |
 | **Vulnerabilities** | `get_issue` | Technical details, including **code snippets** and raw requests/responses. |
 | **Vulnerabilities** | `get_top_vulnerabilities` | Risk overview (vulnerability count by severity). |
-| **Vulnerabilities** | `get_issues_by_asset_id` | List vulnerabilities for a company filtered by a single asset ID. |
-| **Vulnerabilities** | `get_issues_by_project_id` | List vulnerabilities for a company filtered by a project ID. |
 | **Management** | `get_projects` | List active security projects. |
 | **Management** | `get_project` | Get specific project in Conviso Platform by project ID. |
 | **Assets** | `get_assets` | List assets mapped within the platform. |
@@ -44,8 +42,6 @@ The server exposes the following tools to the LLM:
 
 ## ✍️ Write Operations (Mutations)
 
-> Available in the **Node** server. The Python server remains read-only for now.
-
 Write operations are limited to the client-facing capabilities below — everything else the
 platform supports is intentionally not exposed.
 
@@ -71,168 +67,66 @@ these for confirmation. Confirm intent before running destructive or bulk operat
 
 ### Prerequisites
 
-* Python 3.10 or higher installed.
+* Node.js 20.10 or later.
 * A Conviso Platform API Key (obtained from your profile settings).
 * An MCP-compatible client (e.g., [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.com/), etc).
 
-### 1. Server Setup
+### 1. Quick Start (npm — recommended)
 
-Clone this repository and configure the virtual environment to run the server locally:
+The server is published as [`@convisoappsec/mcp`](https://www.npmjs.com/package/@convisoappsec/mcp). No clone needed:
 
-Python:
-```bash
-git clone https://github.com/convisoappsec/conviso-mcp.git
-cd conviso-mcp
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r python/requirements.txt
+```json
+{
+  "mcpServers": {
+    "conviso": {
+      "command": "npx",
+      "args": ["-y", "@convisoappsec/mcp"],
+      "env": { "CONVISO_API_KEY": "your_api_key_here" }
+    }
+  }
+}
 ```
 
-Node.js:
-```bash
-git clone https://github.com/convisoappsec/conviso-mcp.git
-cd conviso-mcp/node
-npm install
-```
-
-### 2. Execution Methods
-
-#### Using Docker (Recommended for isolation)
-
-You can build and run the server using Docker to avoid local dependency conflicts.
-
-```bash
-docker build -t conviso-mcp -f python/Dockerfile python/ # For Python version
-docker build -t conviso-mcp-node-image -f node/Dockerfile node/ # For Node.js version
-```
-
-#### Using uv (Python)
-
-[uv](https://github.com/astral-sh/uv) can run the server directly from the `pyproject.toml` without manual environment management.
-
-#### Using npm (Node.js)
-
-[npm](https://www.npmjs.com/) can run the server directly from the package.json without requiring virtual environments or manual dependency management.
-
----
-
-### 3. Client Configuration Examples
-
-The Conviso MCP Server can be integrated into any MCP-compatible host. Below are examples for common clients.
-
-#### Example: Claude Desktop
-
-Claude Desktop reads settings from a JSON file. Location:
+Claude Desktop config file location:
 
 * **Linux:** `~/.config/Claude/claude_desktop_config.json`
 * **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 * **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add one of the following entries based on your preferred execution method:
+The same JSON works for Cursor (`.cursor/mcp.json`) and other MCP clients.
 
-##### A. Standard Python (Local Venv)
+> **Note:** if your Node is managed by nvm (or `npx` is not on the client's PATH), use absolute
+> paths instead: `"command": "/absolute/path/to/node"`, `"args": ["/absolute/path/to/node_modules/@convisoappsec/mcp/src/conviso_mcp/server.js"]`
+> after `npm install -g @convisoappsec/mcp`.
 
-```json
-{
-  "mcpServers": {
-    "conviso-mcp": {
-      "command": "/PATH/TO/YOUR/PROJECT/venv/bin/python",
-      "args": ["/PATH/TO/YOUR/PROJECT/python/src/conviso_mcp/server.py"],
-      "env": { "CONVISO_API_KEY": "your_api_key_here" }
-    }
-  }
-}
+### 2. Claude Desktop one-click bundle
+
+Download `conviso-mcp-<version>.mcpb` from the [latest GitHub Release](https://github.com/convisoappsec/conviso-mcp/releases),
+open it with Claude Desktop, and paste your API key when prompted.
+
+### 3. From source / Docker
+
+```bash
+git clone https://github.com/convisoappsec/conviso-mcp.git
+cd conviso-mcp/node
+npm install
+CONVISO_API_KEY=your_api_key_here npm start
 ```
 
-##### B. Node.js (Local)
-
-```json
-{
-  "mcpServers": {
-    "conviso-mcp": {
-      "command": "node",
-      "args": [
-        "/PATH/TO/YOUR/PROJECT/node/src/conviso_mcp/server.js"
-      ],
-      "env": {
-        "CONVISO_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
+```bash
+docker build -t conviso-mcp-node-image -f node/Dockerfile node/
 ```
 
-##### C. Docker
-
 ```json
 {
   "mcpServers": {
-    "conviso-mcp-docker": {
+    "conviso": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-e", "CONVISO_API_KEY=your_api_key_here", "conviso-mcp"]
+      "args": ["run", "-i", "--rm", "--init", "-e", "CONVISO_API_KEY=your_api_key_here", "conviso-mcp-node-image"]
     }
   }
 }
 ```
-
-Node.js:
-```json
-{
-  "mcpServers": {
-    "conviso-mcp": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "--init",
-        "-e",
-        "CONVISO_API_KEY=your_api_key_here",
-        "conviso-mcp-node-image"
-      ]
-    }
-  }
-}
-```
-
-##### D. uv
-
-```json
-{
-  "mcpServers": {
-    "conviso-mcp-uv": {
-      "command": "uv",
-      "args": ["--directory", "/PATH/TO/YOUR/PROJECT", "run", "conviso-mcp"],
-      "env": { "CONVISO_API_KEY": "your_api_key_here" }
-    }
-  }
-}
-```
-
-#### Example: Cursor
-
-Add the following JSON file, `mcp.json` or equivalent configuration, to the `.cursor` folder:
-
-```json
-{
-  "mcpServers": {
-    "conviso-mcp": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/ABSOLUTE/PATH/TO/src/conviso_mcp",
-        "run",
-        "conviso-mcp"
-      ],
-      "env": {
-        "CONVISO_API_KEY": "your_api_key_here"
-      }
-    }
-  }
-}
-```
-
-> **Warning:** Always use absolute paths for commands and arguments.
 
 ### 4. Verification
 

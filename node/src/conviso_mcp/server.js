@@ -7,17 +7,14 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 
-import { FeedGateway } from './feed_gateway.js';
+import { GraphQLClient } from './graphql_client.js';
+import { listMutations, describeMutation } from './mutations.js';
 import pkg from '../../package.json' with { type: 'json' };
-
-const gateway = new FeedGateway();
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
-const server = new McpServer({
-  name: pkg.name || 'conviso-mcp',
-  version: pkg.version || '0.4.0',
-});
+const BASE_URL = 'https://app.convisoappsec.com';
+const gql = new GraphQLClient(`${BASE_URL}/graphql`, process.env.CONVISO_API_KEY || '');
 
 function sanitizeError(err, message = 'Request failed') {
   const error_id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -45,6 +42,9 @@ function sanitizeError(err, message = 'Request failed') {
   if (Array.isArray(err?.graphqlErrors) && err.graphqlErrors.length) {
     result.details = err.graphqlErrors;
   }
+  if (err?.authHint) {
+    result.hint = err.authHint;
+  }
   return result;
 }
 
@@ -59,190 +59,86 @@ function ok(data) {
   };
 }
 
-function fail(err, msg) {
-  return ok(sanitizeError(err, msg));
-}
+// Shared enum strings so tool descriptions state each list exactly once.
+const SEVERITIES = 'NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL';
+const ISSUE_STATUSES = 'CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED';
 
-// Annotation presets to keep tool definitions terse.
-const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
-const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true };
+/**
+ * Build a fresh McpServer with all tools registered. stdio mode uses one instance for the
+ * whole session; HTTP mode builds one per request (the SDK's stateless pattern — reusing a
+ * single instance across concurrent transports leaks state between requests).
+ */
+function buildServer() {
+  const server = new McpServer({
+    name: pkg.name || 'conviso-mcp',
+    version: pkg.version || '0.6.0',
+  });
 
-server.registerTool(
-  'get_companies',
-  {
-    description: 'Return a paginated list of companies accessible with the provided API key. search = name contains; label_eq = exact name match.',
-    inputSchema: z.object({
+  // Registration helper: one place for the try/catch, error shape, and annotations.
+  function tool(name, { title, desc, schema, write = false, destructive = false, local = false }, handler) {
+    server.registerTool(
+      name,
+      {
+        description: desc,
+        inputSchema: schema,
+        annotations: {
+          title,
+          readOnlyHint: !write,
+          destructiveHint: destructive,
+          idempotentHint: !write,
+          openWorldHint: !local,
+        },
+      },
+      async (args) => {
+        try {
+          return ok(await handler(args));
+        } catch (err) {
+          return ok(sanitizeError(err, `${name} failed`));
+        }
+      }
+    );
+  }
+
+  /**
+   * READS — companies, issues, projects, assets, metrics
+   */
+
+  tool('get_companies', {
+    title: 'List Companies',
+    desc: 'List companies accessible with the API key. search = name contains; label_eq = exact name match.',
+    schema: z.object({
       page: z.number().optional(),
       limit: z.number().optional(),
       search: z.string().optional(),
       label_eq: z.string().optional(),
     }),
-    annotations: {
-      title: 'List Companies',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ page = 1, limit = 10, search = '', label_eq = null }) => {
-    try {
-      return ok(await gateway.get_companies(page, limit, search, label_eq));
-    } catch (err) {
-      return fail(err, 'Failed to list companies');
-    }
-  }
-);
+  }, ({ page = 1, limit = 10, search = '', label_eq = null }) =>
+    gql.get_companies(page, limit, search, label_eq));
 
-server.registerTool(
-  'get_company_info',
-  {
-    description: 'Retrieve detailed information about a specific company, including plan, integrations, and branding metadata.',
-    inputSchema: z.object({ company_id: z.number() }),
-    annotations: {
-      title: 'Company Details',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ company_id }) => {
-    try {
-      return ok(await gateway.get_company_by_id(company_id));
-    } catch (err) {
-      return fail(err, 'Failed to get company info');
-    }
-  }
-);
+  tool('get_company_info', {
+    title: 'Company Details',
+    desc: 'Get a company by ID: plan, integrations, branding metadata.',
+    schema: z.object({ company_id: z.number() }),
+  }, ({ company_id }) => gql.get_company_by_id(company_id));
 
-server.registerTool(
-  'get_issue',
-  {
-    description: 'Fetch detailed technical data for a specific vulnerability/issue. Optionally include raw request/response and vulnerable code snippets when `return_vulnerable_data` is true. WARNING: setting `return_vulnerable_data=true` may return sensitive data (exploit code, raw HTTP requests/responses, or secrets) — use with caution.',
-    inputSchema: z.object({
+  tool('get_issue', {
+    title: 'Issue Details',
+    desc: 'Get full technical detail for one issue/vulnerability. Set return_vulnerable_data=true to include raw requests/responses and vulnerable code snippets (may contain sensitive data).',
+    schema: z.object({
       id: z.number(),
       return_vulnerable_data: z.boolean().optional(),
     }),
-    annotations: {
-      title: 'Issue Details',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ id, return_vulnerable_data }) => {
-    try {
-      return ok(await gateway.get_issue_by_id(id, return_vulnerable_data));
-    } catch (err) {
-      return fail(err, 'Failed to get issue details');
-    }
-  }
-);
+  }, ({ id, return_vulnerable_data }) => gql.get_issue_by_id(id, return_vulnerable_data));
 
-server.registerTool(
-  'get_issues',
-  {
-    description: `Get issues (vulnerabilities) for a company, with rich filtering and sorting.
-
-Filters (all optional):
-- search: substring match on issue title.
-- severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
-- statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
-  FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
-- sla_states: any of ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED.
-- created_after / created_before: ISO8601 dates (YYYY-MM-DD). For relative ranges
-  ("last 30 days") call get_today_date first and compute the bounds.
-- assignee_emails: list of assignee emails.
-- project_id: restrict to one project. asset filtering: use get_issues_by_asset_id.
-- sort_by: one of RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT. order: ASC or DESC.
-- extra_filters: dict mapping directly to IssuesFiltersInput for advanced keys, e.g.
-  {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
-   "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
-   "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
-  extra_filters values are sent as-is — omit a key rather than passing an empty list.
-
-Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
-asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.`,
-    inputSchema: z.object({
-        company_id: z.number(),
-        page: z.number().optional(),
-        limit: z.number().optional(),
-        project_id: z.number().optional(),
-        search: z.string().optional(),
-        severities: z.array(z.string()).optional(),
-        statuses: z.array(z.string()).optional(),
-        sla_states: z.array(z.string()).optional(),
-        created_after: z.string().optional(),
-        created_before: z.string().optional(),
-        assignee_emails: z.array(z.string()).optional(),
-        sort_by: z.string().optional(),
-        order: z.string().optional(),
-        extra_filters: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: {
-      title: 'List Issues',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({
-    company_id, page = 1, limit = 10, project_id, search = '',
-    severities, statuses, sla_states, created_after, created_before,
-    assignee_emails, sort_by, order = 'DESC', extra_filters,
-  }) => {
-    try {
-      return ok(await gateway.getIssues(company_id, {
-        page,
-        limit,
-        projectId: project_id,
-        search,
-        severities,
-        statuses,
-        slaStates: sla_states,
-        createdAfter: created_after,
-        createdBefore: created_before,
-        assigneeEmails: assignee_emails,
-        sortBy: sort_by,
-        order,
-        extraFilters: extra_filters,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list issues');
-    }
-  }
-);
-
-server.registerTool(
-  'get_issues_by_asset_id',
-  {
-    description: `List vulnerabilities for a company filtered by a single asset ID, with rich filtering and sorting.
-
-Filters (all optional):
-- search: substring match on issue title.
-- severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
-- statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
-  FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
-- sla_states: any of ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED.
-- created_after / created_before: ISO8601 dates (YYYY-MM-DD). For relative ranges
-  ("last 30 days") call get_today_date first and compute the bounds.
-- assignee_emails: list of assignee emails.
-- sort_by: one of RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT. order: ASC or DESC.
-- extra_filters: dict mapping directly to IssuesFiltersInput for advanced keys, e.g.
-  {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
-   "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
-   "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
-
-Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
-asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.`,
-    inputSchema: z.object({
+  tool('get_issues', {
+    title: 'List Issues',
+    desc: `List a company's vulnerabilities with filtering and sorting. Optional: search (title substring), project_id, asset_id, severities (${SEVERITIES}), statuses (${ISSUE_STATUSES}), sla_states (ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED), created_after/created_before (YYYY-MM-DD — call get_today_date for relative ranges), assignee_emails, sort_by (RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT) with order ASC|DESC, and extra_filters (raw IssuesFiltersInput keys, e.g. cves, categories, businessImpact — sent as-is). Returns collection + metadata (totalCount/totalPages) for pagination.`,
+    schema: z.object({
       company_id: z.number(),
-      asset_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
+      project_id: z.number().optional(),
+      asset_id: z.number().optional(),
       search: z.string().optional(),
       severities: z.array(z.string()).optional(),
       statuses: z.array(z.string()).optional(),
@@ -254,121 +150,31 @@ asset, project) plus metadata (totalCount, totalPages, currentPage) for paginati
       order: z.string().optional(),
       extra_filters: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'List Issues by Asset ID',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({
-    company_id, asset_id, page = 1, limit = 10, search = '',
+  }, ({
+    company_id, page = 1, limit = 10, project_id, asset_id, search = '',
     severities, statuses, sla_states, created_after, created_before,
     assignee_emails, sort_by, order = 'DESC', extra_filters,
-  }) => {
-    try {
-      const asset_ids = Array.isArray(asset_id) ? asset_id : [asset_id];
-      return ok(await gateway.get_issues_by_asset_ids(company_id, page, limit, asset_ids, search, {
-        severities,
-        statuses,
-        slaStates: sla_states,
-        createdAfter: created_after,
-        createdBefore: created_before,
-        assigneeEmails: assignee_emails,
-        sortBy: sort_by,
-        order,
-        extraFilters: extra_filters,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list issues by asset id');
-    }
-  }
-);
+  }) => gql.getIssues(company_id, {
+    page,
+    limit,
+    projectId: project_id,
+    assetIds: asset_id ? [asset_id] : undefined,
+    search,
+    severities,
+    statuses,
+    slaStates: sla_states,
+    createdAfter: created_after,
+    createdBefore: created_before,
+    assigneeEmails: assignee_emails,
+    sortBy: sort_by,
+    order,
+    extraFilters: extra_filters,
+  }));
 
-server.registerTool(
-  'get_issues_by_project_id',
-  {
-    description: `List vulnerabilities for a company filtered by a project ID, with rich filtering and sorting.
-
-Filters (all optional):
-- search: substring match on issue title.
-- severities: any of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL.
-- statuses: any of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION,
-  FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED.
-- sla_states: any of ON_TRACK, APPROACHING, BREACHED, RESOLVED, NOT_TRACKED, NOT_PARAMETERIZED.
-- created_after / created_before: ISO8601 dates (YYYY-MM-DD). For relative ranges
-  ("last 30 days") call get_today_date first and compute the bounds.
-- assignee_emails: list of assignee emails.
-- sort_by: one of RISK_SCORE, SEVERITY, ID, CREATED_AT, UPDATED_AT, SLA_DUE_AT. order: ASC or DESC.
-- extra_filters: dict mapping directly to IssuesFiltersInput for advanced keys, e.g.
-  {"cves": [...], "categories": [...], "reachableBy": ["STATIC_ANALYSIS"],
-   "businessImpact": ["HIGH"], "exploitability": "INTERNET_FACING",
-   "compromisedEnvironment": true, "aiFpAnalyzed": true, "assetTags": [...]}.
-
-Returns issue collection (id, title, severity, status, dates, sla, assignedUsers,
-asset, project) plus metadata (totalCount, totalPages, currentPage) for pagination.`,
-    inputSchema: z.object({
-      company_id: z.number(),
-      project_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      search: z.string().optional(),
-      severities: z.array(z.string()).optional(),
-      statuses: z.array(z.string()).optional(),
-      sla_states: z.array(z.string()).optional(),
-      created_after: z.string().optional(),
-      created_before: z.string().optional(),
-      assignee_emails: z.array(z.string()).optional(),
-      sort_by: z.string().optional(),
-      order: z.string().optional(),
-      extra_filters: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: {
-      title: 'List Issues by Project ID',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({
-    company_id, project_id, page = 1, limit = 10, search = '',
-    severities, statuses, sla_states, created_after, created_before,
-    assignee_emails, sort_by, order = 'DESC', extra_filters,
-  }) => {
-    try {
-      return ok(await gateway.getIssues(company_id, {
-        page,
-        limit,
-        projectId: project_id,
-        search,
-        severities,
-        statuses,
-        slaStates: sla_states,
-        createdAfter: created_after,
-        createdBefore: created_before,
-        assigneeEmails: assignee_emails,
-        sortBy: sort_by,
-        order,
-        extraFilters: extra_filters,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list issues by project id');
-    }
-  }
-);
-
-server.registerTool(
-  'get_top_vulnerabilities',
-  {
-    description: 'Return a summary of vulnerability counts grouped by severity for a given company (risk overview). '
-      + 'Optional filters (severities, statuses, asset_ids, asset_tags, created_after/created_before) narrow the '
-      + 'overview; when none are set the response is identical to calling with no arguments at all. '
-      + 'severities: NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL. statuses: CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, '
-      + 'AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED. created_after/created_before '
-      + 'are ISO8601 dates (YYYY-MM-DD).',
-    inputSchema: z.object({
+  tool('get_top_vulnerabilities', {
+    title: 'Top Vulnerabilities',
+    desc: `Vulnerability counts grouped by title/severity for a company (risk overview). Optional filters: severities (${SEVERITIES}), statuses (${ISSUE_STATUSES}), asset_ids, asset_tags, created_after/created_before (YYYY-MM-DD).`,
+    schema: z.object({
       company_id: z.number(),
       severities: z.array(z.string()).optional(),
       statuses: z.array(z.string()).optional(),
@@ -377,44 +183,20 @@ server.registerTool(
       created_after: z.string().optional(),
       created_before: z.string().optional(),
     }),
-    annotations: {
-      title: 'Top Vulnerabilities',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ company_id, severities, statuses, asset_ids, asset_tags, created_after, created_before }) => {
-    try {
-      return ok(await gateway.get_top_vulnerabilities(company_id, {
-        severities,
-        statuses,
-        assetIds: asset_ids,
-        assetTags: asset_tags,
-        createdAfter: created_after,
-        createdBefore: created_before,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to get top vulnerabilities');
-    }
-  }
-);
+  }, ({ company_id, severities, statuses, asset_ids, asset_tags, created_after, created_before }) =>
+    gql.get_top_vulnerabilities(company_id, {
+      severities,
+      statuses,
+      assetIds: asset_ids,
+      assetTags: asset_tags,
+      createdAfter: created_after,
+      createdBefore: created_before,
+    }));
 
-server.registerTool(
-  'get_projects',
-  {
-    description: `Return a paginated list of security projects for a company, with filtering and sorting. Defaults to 25 results per page to conserve tokens.
-
-Filters (all optional):
-- search: substring match on project label.
-- statuses: platform status labels (free text, e.g. "Fixing"), not an enum.
-- project_types: platform project type labels (free text, e.g. "Pentest"), not an enum.
-- created_after / created_before: ISO8601 dates (YYYY-MM-DD) bounding createdAt.
-- tags: list of project tags.
-- analyst_emails: list of allocated analyst emails.
-- sort_by: field to sort by (default "createdAt"). descending: sort direction (default true).`,
-    inputSchema: z.object({
+  tool('get_projects', {
+    title: 'List Projects',
+    desc: 'List a company\'s security projects (paginated, default 25/page). Optional: search (label substring), statuses and project_types (platform labels, free text e.g. "Fixing", "Pentest"), created_after/created_before (YYYY-MM-DD), tags, analyst_emails, sort_by (default createdAt) + descending.',
+    schema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
@@ -428,101 +210,37 @@ Filters (all optional):
       sort_by: z.string().optional(),
       descending: z.boolean().optional(),
     }),
-    annotations: {
-      title: 'List Projects',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({
+  }, ({
     company_id, page = 1, limit = 25, search = '', statuses, project_types,
     created_after, created_before, tags, analyst_emails, sort_by = 'createdAt',
     descending = true,
-  }) => {
-    try {
-      return ok(await gateway.get_projects(company_id, page, limit, search, {
-        statuses,
-        projectTypes: project_types,
-        createdAfter: created_after,
-        createdBefore: created_before,
-        tags,
-        analystEmails: analyst_emails,
-        sortBy: sort_by,
-        descending,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list projects');
-    }
-  }
-);
+  }) => gql.get_projects(company_id, page, limit, search, {
+    statuses,
+    projectTypes: project_types,
+    createdAfter: created_after,
+    createdBefore: created_before,
+    tags,
+    analystEmails: analyst_emails,
+    sortBy: sort_by,
+    descending,
+  }));
 
-server.registerTool(
-  'get_project',
-  {
-    description: 'Retrieve detailed metadata for a specific project by its ID.',
-    inputSchema: z.object({ project_id: z.number() }),
-    annotations: {
-      title: 'Project Details',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ project_id }) => {
-    try {
-      return ok(await gateway.get_project_by_id(project_id));
-    } catch (err) {
-      return fail(err, 'Failed to get project');
-    }
-  }
-);
+  tool('get_project', {
+    title: 'Project Details',
+    desc: 'Get a project by ID.',
+    schema: z.object({ project_id: z.number() }),
+  }, ({ project_id }) => gql.get_project_by_id(project_id));
 
-server.registerTool(
-  'get_asset',
-  {
-    description: 'Fetch information about a specific asset by its ID.',
-    inputSchema: z.object({ asset_id: z.number() }),
-    annotations: {
-      title: 'Asset Details',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ asset_id }) => {
-    try {
-      return ok(await gateway.get_asset_by_id(asset_id));
-    } catch (err) {
-      return fail(err, 'Failed to get asset');
-    }
-  }
-);
+  tool('get_asset', {
+    title: 'Asset Details',
+    desc: 'Get an asset by ID.',
+    schema: z.object({ asset_id: z.number() }),
+  }, ({ asset_id }) => gql.get_asset_by_id(asset_id));
 
-server.registerTool(
-  'get_assets',
-  {
-    description: `Return a paginated list of assets for a company, with rich filtering and sorting. Defaults to 25 results per page to reduce token usage.
-
-Filters (all optional):
-- name / search: substring match on asset name.
-- tags: list of asset tags.
-- technology: list of technologies.
-- business_impact: any of LOW, MEDIUM, HIGH, NOT_DEFINED.
-- exploitability: any of INTERNET_FACING, INTERNAL, NOT_DEFINED.
-- asset_type: asset type filter.
-- environment_compromised: boolean filter for compromised environment.
-- covered_by_scan: boolean filter for scan coverage.
-- sort_by: one of updated_at, name, business_impact, risk_score. order: ASC or DESC.
-- extra_filters: object mapping directly to AssetsSearch for advanced keys.
-  extra_filters values are sent as-is — omit a key rather than passing an empty list.
-
-Returns asset collection (id, name, assetType, environment, audience, dates, riskScore)
-plus metadata (totalCount, totalPages, currentPage) for pagination.`,
-    inputSchema: z.object({
+  tool('get_assets', {
+    title: 'List Assets',
+    desc: 'List a company\'s assets (paginated, default 25/page). Optional: name/search (substring), tags, technology, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), asset_type, environment_compromised, covered_by_scan, sort_by (updated_at, name, business_impact, risk_score) + order, extra_filters (raw AssetsSearch keys). Returns collection + metadata.',
+    schema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
@@ -539,95 +257,45 @@ plus metadata (totalCount, totalPages, currentPage) for pagination.`,
       order: z.string().optional(),
       extra_filters: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'List Assets',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({
+  }, ({
     company_id, page = 1, limit = 25, name, search, tags, technology,
     business_impact, exploitability, asset_type, environment_compromised,
     covered_by_scan, sort_by, order, extra_filters,
-  }) => {
-    try {
-      return ok(await gateway.get_assets(company_id, page, limit, {
-        name,
-        search,
-        tags,
-        technology,
-        businessImpact: business_impact,
-        exploitability,
-        assetType: asset_type,
-        environmentCompromised: environment_compromised,
-        coveredByScan: covered_by_scan,
-        sortBy: sort_by,
-        order,
-        extraFilters: extra_filters,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list assets');
-    }
-  }
-);
+  }) => gql.get_assets_by_company(company_id, page, limit, {
+    name,
+    search,
+    tags,
+    technology,
+    businessImpact: business_impact,
+    exploitability,
+    assetType: asset_type,
+    environmentCompromised: environment_compromised,
+    coveredByScan: covered_by_scan,
+    sortBy: sort_by,
+    order,
+    extraFilters: extra_filters,
+  }));
 
-server.registerTool(
-  'create_project_url',
-  {
-    description: 'Return a direct URL to open a project in the Conviso Platform for quick navigation.',
-    inputSchema: z.object({
-      company_id: z.number(),
-      project_id: z.number(),
-    }),
-    annotations: {
-      title: 'Project URL Generator',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ company_id, project_id }) => {
-    try {
-      return ok(await gateway.create_project_url(company_id, project_id));
-    } catch (err) {
-      return fail(err, 'Failed to create project URL');
-    }
-  }
-);
+  tool('create_project_url', {
+    title: 'Project URL',
+    desc: 'Build the direct Conviso Platform URL for a project.',
+    schema: z.object({ company_id: z.number(), project_id: z.number() }),
+    local: true,
+  }, ({ company_id, project_id }) =>
+    `${BASE_URL}/spa/company/${company_id}/projects/${project_id}`);
 
-server.registerTool(
-  'create_issue_url',
-  {
-    description: 'Return a direct URL to open a specific issue in the Conviso Platform for triage or review.',
-    inputSchema: z.object({
-      company_id: z.number(),
-      issue_id: z.number(),
-    }),
-    annotations: {
-      title: 'Issue URL Generator',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ company_id, issue_id }) => {
-    try {
-      return ok(await gateway.create_issue_url(company_id, issue_id));
-    } catch (err) {
-      return fail(err, 'Failed to create issue URL');
-    }
-  }
-);
+  tool('create_issue_url', {
+    title: 'Issue URL',
+    desc: 'Build the direct Conviso Platform URL for an issue.',
+    schema: z.object({ company_id: z.number(), issue_id: z.number() }),
+    local: true,
+  }, ({ company_id, issue_id }) =>
+    `${BASE_URL}/spa/company/${company_id}/vulnerabilities?title=&search=${issue_id}`);
 
-server.registerTool(
-  'get_mttr_over_time',
-  {
-    description: 'Get Mean Time To Resolution (MTTR) aggregated over a date range. Supports filtering by severities, statuses, and assets.',
-    inputSchema: z.object({
+  tool('get_mttr_over_time', {
+    title: 'MTTR Over Time',
+    desc: 'Mean Time To Resolution over a date range, broken down by severity. Optional filters: severities, statuses, asset_ids, asset_tags.',
+    schema: z.object({
       company_id: z.number(),
       start_date: z.string(),
       end_date: z.string(),
@@ -636,208 +304,220 @@ server.registerTool(
       asset_ids: z.array(z.number()).optional(),
       asset_tags: z.array(z.string()).optional(),
     }),
-    annotations: {
-      title: 'MTTR Over Time',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.get_mttr_over_time(
-        args.company_id,
-        args.start_date,
-        args.end_date,
-        args.severities,
-        args.statuses,
-        args.asset_ids,
-        args.asset_tags
-      ));
-    } catch (err) {
-      return fail(err, 'Failed to get MTTR metrics');
-    }
-  }
-);
+  }, (a) => gql.get_mttr_over_time(a.company_id, a.start_date, a.end_date, a.severities, a.statuses, a.asset_ids, a.asset_tags));
 
-server.registerTool(
-  'get_overall_risk_score_history',
-  {
-    description: 'Retrieve historical overall risk scores for a company, useful for trend analysis and reporting.',
-    inputSchema: z.object({
+  tool('get_overall_risk_score_history', {
+    title: 'Risk Score History',
+    desc: 'Historical overall risk score for a company (current value + difference from last period).',
+    schema: z.object({ company_id: z.number() }),
+  }, ({ company_id }) => gql.get_overall_risk_score_history(company_id));
+
+  tool('get_today_date', {
+    title: 'Get Today Date',
+    desc: 'Current day/month/year — use to compute relative date ranges before filtering by dates.',
+    schema: z.object({}),
+    local: true,
+  }, () => {
+    const d = new Date();
+    return { day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() };
+  });
+
+  /**
+   * READS — tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling
+   */
+
+  tool('get_tickets', {
+    title: 'List Tickets',
+    desc: 'List a company\'s tickets (paginated). Optional: search, sort_by + descending, params (raw TicketSearch keys: types, statuses, priorities, impacts, tags, mineOnly...).',
+    schema: z.object({
       company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      sort_by: z.string().optional(),
+      descending: z.boolean().optional(),
+      params: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Risk Score History',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-  },
-  async ({ company_id }) => {
-    try {
-      return ok(await gateway.get_overall_risk_score_history(company_id));
-    } catch (err) {
-      return fail(err, 'Failed to get risk score history');
-    }
-  }
-);
+  }, ({ company_id, page, limit, search, sort_by, descending, params }) =>
+    gql.get_tickets(company_id, { page, limit, search, sort_by, descending, params }));
 
-server.registerTool(
-  'get_today_date',
-  {
-    description: 'Utility tool returning the current date.',
-    inputSchema: z.object({}),
-    annotations: {
-      title: 'Get Today Date',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  async () => {
-    try {
-      const d = new Date();
-      return ok({ day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() });
-    } catch (err) {
-      return fail(err, 'Failed to get current date');
-    }
-  }
-);
+  tool('get_ticket', {
+    title: 'Ticket Details',
+    desc: 'Get a ticket by ID (status, priority, impact, assignee).',
+    schema: z.object({ company_id: z.number(), ticket_id: z.number() }),
+  }, ({ company_id, ticket_id }) => gql.get_ticket(company_id, ticket_id));
 
-/**
- * MUTATIONS — generic catalog-driven engine (covers the allowlisted platform mutations;
- * see operation_allowlist.js)
- */
+  tool('get_requirements', {
+    title: 'List Requirements',
+    desc: 'List security requirements/checklists for a scope (company) id, paginated. Optional: filters (raw RequirementsFilterInput).',
+    schema: z.object({
+      scope_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      filters: z.record(z.string(), z.any()).optional(),
+    }),
+  }, ({ scope_id, page, limit, filters }) => gql.get_requirements(scope_id, { page, limit, filters }));
 
-server.registerTool(
-  'list_mutations',
-  {
-    description: `Discover available Conviso Platform mutations (write operations). Returns name, description, category and a destructive flag. This is step 1 of the write workflow: list_mutations (discover) -> describe_mutation (get the input schema) -> execute_mutation (run it).
+  tool('get_requirement', {
+    title: 'Requirement Details',
+    desc: 'Get a requirement/checklist by ID.',
+    schema: z.object({ company_id: z.number(), requirement_id: z.number() }),
+  }, ({ company_id, requirement_id }) => gql.get_requirement(company_id, requirement_id));
 
-Filters (all optional):
-- search: case-insensitive substring matched against mutation name and description.
-- category: one of issue, ticket, project, asset, requirement, pentest, application, threat_model.
-- limit: max rows to return (default 50).`,
-    inputSchema: z.object({
+  tool('get_project_requirements', {
+    title: 'Project Requirements',
+    desc: 'List the requirements/checklists attached to a project.',
+    schema: z.object({ project_id: z.number() }),
+  }, ({ project_id }) => gql.get_project_requirements(project_id));
+
+  tool('get_applications', {
+    title: 'List Applications',
+    desc: 'List a company\'s applications (name, url, riskScore, assetsCount). Optional: search by name.',
+    schema: z.object({ company_id: z.number(), search: z.string().optional() }),
+  }, ({ company_id, search }) => gql.get_applications(company_id, search));
+
+  tool('get_application', {
+    title: 'Application Details',
+    desc: 'Get an application by ID, including its linked assets.',
+    schema: z.object({ company_id: z.number(), application_id: z.number() }),
+  }, ({ company_id, application_id }) => gql.get_application(company_id, application_id));
+
+  tool('get_scan_histories', {
+    title: 'List Scan Histories',
+    desc: 'List scan executions for a company (status, integration, duration, vulnerability counts). Optional: asset_ids, filters (raw ScansHistoriesFiltersInput).',
+    schema: z.object({
+      company_id: z.number(),
+      asset_ids: z.array(z.number()).optional(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      filters: z.record(z.string(), z.any()).optional(),
+    }),
+  }, ({ company_id, asset_ids, page, limit, filters }) =>
+    gql.get_scan_histories(company_id, { assetIds: asset_ids, page, limit, filters }));
+
+  tool('get_asset_scans_count', {
+    title: 'Asset Scans Count',
+    desc: 'Scan coverage for a company: assets with/without scans and which scan types count.',
+    schema: z.object({ company_id: z.number() }),
+  }, ({ company_id }) => gql.get_asset_scans_count(company_id));
+
+  tool('get_sbom_components', {
+    title: 'List SBOM Components',
+    desc: 'List SBOM / supply-chain components (name, version, technology, package manager, license, issues by severity). Optional: search (raw SbomComponentSearchInput).',
+    schema: z.object({
+      company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.record(z.string(), z.any()).optional(),
+    }),
+  }, ({ company_id, page, limit, search }) => gql.get_sbom_components(company_id, { page, limit, search }));
+
+  tool('get_pentest_artifacts', {
+    title: 'List Pentest Artifacts',
+    desc: 'List AI-Pentest artifacts (label, type, scheduling, latest execution). Optional: search, assignee_email, pentest_type, application_id.',
+    schema: z.object({
+      company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      assignee_email: z.string().optional(),
+      pentest_type: z.string().optional(),
+      application_id: z.number().optional(),
+    }),
+  }, ({ company_id, page, limit, search, assignee_email, pentest_type, application_id }) =>
+    gql.get_pentest_artifacts(company_id, {
+      page, limit, search, assigneeEmail: assignee_email, pentestType: pentest_type, applicationId: application_id,
+    }));
+
+  tool('get_pentest_artifact', {
+    title: 'Pentest Artifact Details',
+    desc: 'Get an AI-Pentest artifact by ID, including scope and executions.',
+    schema: z.object({ artifact_id: z.number() }),
+  }, ({ artifact_id }) => gql.get_pentest_artifact(artifact_id));
+
+  tool('get_pentest_execution', {
+    title: 'Pentest Execution Result',
+    desc: 'Get an AI-Pentest execution by ID: status, vulnerability count, severity breakdown, retest progress.',
+    schema: z.object({ execution_id: z.number() }),
+  }, ({ execution_id }) => gql.get_pentest_execution(execution_id));
+
+  tool('get_threat_model_artifacts', {
+    title: 'List Threat Model Artifacts',
+    desc: 'List Threat Modeling artifacts (label, scope, latest version). Optional: search, assignee_email, has_version.',
+    schema: z.object({
+      company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      assignee_email: z.string().optional(),
+      has_version: z.boolean().optional(),
+    }),
+  }, ({ company_id, page, limit, search, assignee_email, has_version }) =>
+    gql.get_threat_model_artifacts(company_id, {
+      page, limit, search, assigneeEmail: assignee_email, hasVersion: has_version,
+    }));
+
+  tool('get_threat_model_artifact', {
+    title: 'Threat Model Artifact Details',
+    desc: 'Get a Threat Modeling artifact by ID, including its versions (diagrams, notes, scope).',
+    schema: z.object({ artifact_id: z.number() }),
+  }, ({ artifact_id }) => gql.get_threat_model_artifact(artifact_id));
+
+  /**
+   * MUTATIONS — engine (discover -> describe -> execute over the allowlist)
+   */
+
+  tool('list_mutations', {
+    title: 'List Mutations',
+    desc: 'Discover the permitted write operations (name, description, category, destructive flag). Step 1 of the write workflow: list_mutations -> describe_mutation -> execute_mutation. Optional: search (substring), category (issue, ticket, project, asset, requirement, pentest, application, threat_model), limit (default 50).',
+    schema: z.object({
       search: z.string().optional(),
       category: z.string().optional(),
       limit: z.number().optional(),
     }),
-    annotations: {
-      title: 'List Mutations',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  async ({ search, category, limit }) => {
-    try {
-      return ok(gateway.list_mutations({ search, category, limit }));
-    } catch (err) {
-      return fail(err, 'Failed to list mutations');
-    }
-  }
-);
+    local: true,
+  }, ({ search, category, limit }) => listMutations({ search, category, limit }));
 
-server.registerTool(
-  'describe_mutation',
-  {
-    description: `Return the full input schema for a single mutation: argument list, every input field (with type, whether it is required, descriptions, allowed enum values, and nested input objects expanded), plus the default fields returned by execute_mutation. Use this before execute_mutation to build a valid 'variables.input' object.`,
-    inputSchema: z.object({
-      name: z.string(),
-    }),
-    annotations: {
-      title: 'Describe Mutation',
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  async ({ name }) => {
-    try {
-      return ok(gateway.describe_mutation(name));
-    } catch (err) {
-      return fail(err, 'Failed to describe mutation');
-    }
-  }
-);
+  tool('describe_mutation', {
+    title: 'Describe Mutation',
+    desc: 'Full input schema for one mutation: fields with types, required flags, enum values, nested inputs, plus the default returned fields. Call before execute_mutation.',
+    schema: z.object({ name: z.string() }),
+    local: true,
+  }, ({ name }) => describeMutation(name));
 
-server.registerTool(
-  'execute_mutation',
-  {
-    description: `Execute any allowlisted Conviso Platform mutation by name (use list_mutations to see the full set). Covers writes for issues/vulnerabilities, assets (+ DAST), tickets, projects, requirements, AI-pentest, applications and threat modeling.
-
-Usage: call describe_mutation(name) first to learn the input shape, then pass it here. Every mutation takes a single input object, so variables must be { "input": { ...fields... } }.
-
-- name: the mutation name (e.g. "changeIssueStatus", "createProject", "deleteAsset").
-- variables: GraphQL variables, normally { input: { ... } }.
-- return_fields: optional raw GraphQL selection set to override the default returned fields.
-
-WARNING: this performs writes and can be destructive (the catalog marks delete/bulk/remove/cancel/revoke operations as destructive). Confirm intent before running delete or bulk mutations.`,
-    inputSchema: z.object({
+  tool('execute_mutation', {
+    title: 'Execute Mutation',
+    desc: 'Run any permitted write operation by name (see list_mutations). variables is the mutation input — pass { input: {...} } or the input fields directly (auto-wrapped). Optional return_fields overrides the returned selection set. WARNING: performs writes; delete/bulk operations are destructive — confirm intent first.',
+    schema: z.object({
       name: z.string(),
       variables: z.record(z.string(), z.any()).optional(),
       return_fields: z.string().optional(),
     }),
-    annotations: {
-      title: 'Execute Mutation',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async ({ name, variables = {}, return_fields = null }) => {
-    try {
-      return ok(await gateway.execute_mutation(name, variables, return_fields));
-    } catch (err) {
-      return fail(err, 'Failed to execute mutation');
-    }
-  }
-);
+    write: true,
+    destructive: true,
+  }, ({ name, variables = {}, return_fields = null }) =>
+    gql.executeMutation(name, variables, return_fields));
 
-/**
- * MUTATIONS — curated typed shortcuts for the most common writes
- */
+  /**
+   * MUTATIONS — typed shortcuts for the most common writes
+   */
 
-server.registerTool(
-  'change_issue_status',
-  {
-    description: `Change the status of an issue/vulnerability. status must be one of CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED. Pass 'extra' for advanced ChangeIssueStatusInput fields (e.g. riskAcceptedUntil, externalAuthorIdentifier).`,
-    inputSchema: z.object({
+  tool('change_issue_status', {
+    title: 'Change Issue Status',
+    desc: `Change an issue's status. status: one of ${ISSUE_STATUSES}. Optional reason; extra = advanced ChangeIssueStatusInput fields (e.g. riskAcceptedUntil).`,
+    schema: z.object({
       issue_id: z.number(),
       status: z.string(),
       reason: z.string().optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Change Issue Status',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async ({ issue_id, status, reason, extra }) => {
-    try {
-      return ok(await gateway.change_issue_status({ issue_id, status, reason, extra }));
-    } catch (err) {
-      return fail(err, 'Failed to change issue status');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.change_issue_status(a));
 
-server.registerTool(
-  'create_source_code_vulnerability',
-  {
-    description: `Create a source-code (SAST-style) vulnerability/issue on an asset. severity is one of NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL; impact_level and probability_level are LOW, MEDIUM or HIGH (default MEDIUM); status defaults to DRAFT. Pass 'extra' for any other CreateSourceCodeVulnerabilityInput field.`,
-    inputSchema: z.object({
+  tool('create_source_code_vulnerability', {
+    title: 'Create Source Code Vulnerability',
+    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field.`,
+    schema: z.object({
       asset_id: z.number(),
       title: z.string(),
       description: z.string(),
@@ -862,28 +542,13 @@ server.registerTool(
       patterns: z.array(z.string()).optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Create Source Code Vulnerability',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.create_source_code_vulnerability(args));
-    } catch (err) {
-      return fail(err, 'Failed to create source code vulnerability');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.create_source_code_vulnerability(a));
 
-server.registerTool(
-  'create_project',
-  {
-    description: `Create a project. Required: company_id, type_id (project type id), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date. Pass 'extra' for advanced CreateProjectInput fields (e.g. assetsIds, tags, allocatedPortalUserEmails, playbooksIds).`,
-    inputSchema: z.object({
+  tool('create_project', {
+    title: 'Create Project',
+    desc: 'Create a project. Required: company_id, type_id (project type id), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; extra = advanced CreateProjectInput fields (assetsIds, tags, allocatedPortalUserEmails...).',
+    schema: z.object({
       company_id: z.number(),
       type_id: z.number(),
       label: z.string(),
@@ -893,28 +558,13 @@ server.registerTool(
       end_date: z.string().optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Create Project',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.create_project(args));
-    } catch (err) {
-      return fail(err, 'Failed to create project');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.create_project(a));
 
-server.registerTool(
-  'create_asset',
-  {
-    description: `Create an asset. Required: company_id, name. Optional: asset_type, url, description, business_impact (LOW/MEDIUM/HIGH/NOT_DEFINED), exploitability (INTERNET_FACING/INTERNAL/NOT_DEFINED), tags (string list). Pass 'extra' for advanced CreateAssetInput fields.`,
-    inputSchema: z.object({
+  tool('create_asset', {
+    title: 'Create Asset',
+    desc: 'Create an asset. Required: company_id, name. Optional: asset_type, url, description, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), tags; extra = advanced CreateAssetInput fields.',
+    schema: z.object({
       company_id: z.number(),
       name: z.string(),
       asset_type: z.string().optional(),
@@ -925,28 +575,13 @@ server.registerTool(
       tags: z.array(z.string()).optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Create Asset',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.create_asset(args));
-    } catch (err) {
-      return fail(err, 'Failed to create asset');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.create_asset(a));
 
-server.registerTool(
-  'create_ticket',
-  {
-    description: `Open a ticket. Required: company_id, type (BUG, FEATURE_REQUEST, PROJECT_REQUEST, SUPPORT_REQUEST), title, description. Optional: priority (P1/P2/P3), impact (LOW/MEDIUM/HIGH). Pass 'extra' for advanced CreateTicketInput fields.`,
-    inputSchema: z.object({
+  tool('create_ticket', {
+    title: 'Create Ticket',
+    desc: 'Open a ticket. Required: company_id, type (BUG, FEATURE_REQUEST, PROJECT_REQUEST, SUPPORT_REQUEST), title, description. Optional: priority (P1, P2, P3), impact (LOW, MEDIUM, HIGH); extra = advanced CreateTicketInput fields.',
+    schema: z.object({
       company_id: z.number(),
       type: z.string(),
       title: z.string(),
@@ -955,64 +590,27 @@ server.registerTool(
       impact: z.string().optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: {
-      title: 'Create Ticket',
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.create_ticket(args));
-    } catch (err) {
-      return fail(err, 'Failed to create ticket');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.create_ticket(a));
 
-/**
- * CURATED WRITES — DAST + AI-Pentest shortcuts
- */
+  tool('run_dast', {
+    title: 'Run DAST',
+    desc: 'Start a Conviso DAST scan on an asset (startConvisoDast). Required: asset_id.',
+    schema: z.object({ asset_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
+    write: true,
+  }, (a) => gql.run_dast(a));
 
-server.registerTool(
-  'run_dast',
-  {
-    description: 'Start a Conviso DAST scan on an asset (startConvisoDast). Required: asset_id.',
-    inputSchema: z.object({ asset_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
-    annotations: { title: 'Run DAST', ...WRITE },
-  },
-  async ({ asset_id, extra }) => {
-    try {
-      return ok(await gateway.run_dast({ asset_id, extra }));
-    } catch (err) {
-      return fail(err, 'Failed to start DAST');
-    }
-  }
-);
+  tool('trigger_pentest', {
+    title: 'Trigger AI-Pentest',
+    desc: 'Trigger an AI-Pentest execution from an existing pentest artifact (createPentestExecution). Required: artifact_id.',
+    schema: z.object({ artifact_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
+    write: true,
+  }, (a) => gql.trigger_pentest(a));
 
-server.registerTool(
-  'trigger_pentest',
-  {
-    description: 'Trigger an AI-Pentest execution from an existing pentest artifact (createPentestExecution). Required: artifact_id.',
-    inputSchema: z.object({ artifact_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
-    annotations: { title: 'Trigger AI-Pentest', ...WRITE },
-  },
-  async ({ artifact_id, extra }) => {
-    try {
-      return ok(await gateway.trigger_pentest({ artifact_id, extra }));
-    } catch (err) {
-      return fail(err, 'Failed to trigger pentest');
-    }
-  }
-);
-
-server.registerTool(
-  'create_pentest_artifact',
-  {
-    description: 'Create an AI-Pentest artifact (the scope/config a pentest runs against). Required: company_id, application_id, label, pentest_type. Optional: description, scope_text, assignee_email, domains, in_scope, out_scope. Pass \'extra\' for advanced fields (scheduling, repositories, documentation, size/depth).',
-    inputSchema: z.object({
+  tool('create_pentest_artifact', {
+    title: 'Create Pentest Artifact',
+    desc: 'Create an AI-Pentest artifact (the scope/config a pentest runs against). Required: company_id, application_id, label, pentest_type. Optional: description, scope_text, assignee_email, domains, in_scope, out_scope; extra = advanced fields (scheduling, repositories, documentation, size/depth).',
+    schema: z.object({
       company_id: z.number(),
       application_id: z.number(),
       label: z.string(),
@@ -1025,303 +623,11 @@ server.registerTool(
       out_scope: z.array(z.string()).optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
-    annotations: { title: 'Create Pentest Artifact', ...WRITE },
-  },
-  async (args) => {
-    try {
-      return ok(await gateway.create_pentest_artifact(args));
-    } catch (err) {
-      return fail(err, 'Failed to create pentest artifact');
-    }
-  }
-);
+    write: true,
+  }, (a) => gql.create_pentest_artifact(a));
 
-/**
- * READS — Tickets, Requirements, Applications, Scans, Supply chain, AI-Pentest, Threat Modeling
- */
-
-server.registerTool(
-  'get_tickets',
-  {
-    description: 'List tickets for a company (paginated). Optional: search (title/description), sort_by, descending, and params (TicketSearch: types, statuses, priorities, impacts, tags, mineOnly...).',
-    inputSchema: z.object({
-      company_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      search: z.string().optional(),
-      sort_by: z.string().optional(),
-      descending: z.boolean().optional(),
-      params: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: { title: 'List Tickets', ...READ },
-  },
-  async ({ company_id, page, limit, search, sort_by, descending, params }) => {
-    try {
-      return ok(await gateway.get_tickets(company_id, { page, limit, search, sort_by, descending, params }));
-    } catch (err) {
-      return fail(err, 'Failed to list tickets');
-    }
-  }
-);
-
-server.registerTool(
-  'get_ticket',
-  {
-    description: 'Get a single ticket by id, including status, priority, impact and assignee.',
-    inputSchema: z.object({ company_id: z.number(), ticket_id: z.number() }),
-    annotations: { title: 'Ticket Details', ...READ },
-  },
-  async ({ company_id, ticket_id }) => {
-    try {
-      return ok(await gateway.get_ticket(company_id, ticket_id));
-    } catch (err) {
-      return fail(err, 'Failed to get ticket');
-    }
-  }
-);
-
-server.registerTool(
-  'get_requirements',
-  {
-    description: 'List security requirements/checklists for a scope (company) id, paginated. Optional: filters (RequirementsFilterInput).',
-    inputSchema: z.object({
-      scope_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      filters: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: { title: 'List Requirements', ...READ },
-  },
-  async ({ scope_id, page, limit, filters }) => {
-    try {
-      return ok(await gateway.get_requirements(scope_id, { page, limit, filters }));
-    } catch (err) {
-      return fail(err, 'Failed to list requirements');
-    }
-  }
-);
-
-server.registerTool(
-  'get_requirement',
-  {
-    description: 'Get a single requirement/checklist by id.',
-    inputSchema: z.object({ company_id: z.number(), requirement_id: z.number() }),
-    annotations: { title: 'Requirement Details', ...READ },
-  },
-  async ({ company_id, requirement_id }) => {
-    try {
-      return ok(await gateway.get_requirement(company_id, requirement_id));
-    } catch (err) {
-      return fail(err, 'Failed to get requirement');
-    }
-  }
-);
-
-server.registerTool(
-  'get_project_requirements',
-  {
-    description: 'List the requirements/checklists attached to a specific project.',
-    inputSchema: z.object({ project_id: z.number() }),
-    annotations: { title: 'Project Requirements', ...READ },
-  },
-  async ({ project_id }) => {
-    try {
-      return ok(await gateway.get_project_requirements(project_id));
-    } catch (err) {
-      return fail(err, 'Failed to list project requirements');
-    }
-  }
-);
-
-server.registerTool(
-  'get_applications',
-  {
-    description: 'List applications for a company (id, name, url, riskScore, assetsCount). Optional: search by name.',
-    inputSchema: z.object({ company_id: z.number(), search: z.string().optional() }),
-    annotations: { title: 'List Applications', ...READ },
-  },
-  async ({ company_id, search }) => {
-    try {
-      return ok(await gateway.get_applications(company_id, search));
-    } catch (err) {
-      return fail(err, 'Failed to list applications');
-    }
-  }
-);
-
-server.registerTool(
-  'get_application',
-  {
-    description: 'Get a single application by id, including its linked assets.',
-    inputSchema: z.object({ company_id: z.number(), application_id: z.number() }),
-    annotations: { title: 'Application Details', ...READ },
-  },
-  async ({ company_id, application_id }) => {
-    try {
-      return ok(await gateway.get_application(company_id, application_id));
-    } catch (err) {
-      return fail(err, 'Failed to get application');
-    }
-  }
-);
-
-server.registerTool(
-  'get_scan_histories',
-  {
-    description: 'List scan execution histories for a company (status, integration, durations, vulnerability counts). Optional: asset_ids, page, limit, filters (ScansHistoriesFiltersInput).',
-    inputSchema: z.object({
-      company_id: z.number(),
-      asset_ids: z.array(z.number()).optional(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      filters: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: { title: 'List Scan Histories', ...READ },
-  },
-  async ({ company_id, asset_ids, page, limit, filters }) => {
-    try {
-      return ok(await gateway.get_scan_histories(company_id, { assetIds: asset_ids, page, limit, filters }));
-    } catch (err) {
-      return fail(err, 'Failed to list scan histories');
-    }
-  }
-);
-
-server.registerTool(
-  'get_asset_scans_count',
-  {
-    description: 'Get scan coverage counts for a company (assets with scans, without scans, and which scans are considered).',
-    inputSchema: z.object({ company_id: z.number() }),
-    annotations: { title: 'Asset Scans Count', ...READ },
-  },
-  async ({ company_id }) => {
-    try {
-      return ok(await gateway.get_asset_scans_count(company_id));
-    } catch (err) {
-      return fail(err, 'Failed to get asset scans count');
-    }
-  }
-);
-
-server.registerTool(
-  'get_sbom_components',
-  {
-    description: 'List Software Bill of Materials (SBOM) / supply-chain components for a company (name, version, technology, package manager, license, issues by severity). Optional: search (SbomComponentSearchInput).',
-    inputSchema: z.object({
-      company_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      search: z.record(z.string(), z.any()).optional(),
-    }),
-    annotations: { title: 'List SBOM Components', ...READ },
-  },
-  async ({ company_id, page, limit, search }) => {
-    try {
-      return ok(await gateway.get_sbom_components(company_id, { page, limit, search }));
-    } catch (err) {
-      return fail(err, 'Failed to list SBOM components');
-    }
-  }
-);
-
-server.registerTool(
-  'get_pentest_artifacts',
-  {
-    description: 'List AI-Pentest artifacts for a company (label, type, scheduling, latest execution). Optional: search, assignee_email, pentest_type, application_id.',
-    inputSchema: z.object({
-      company_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      search: z.string().optional(),
-      assignee_email: z.string().optional(),
-      pentest_type: z.string().optional(),
-      application_id: z.number().optional(),
-    }),
-    annotations: { title: 'List Pentest Artifacts', ...READ },
-  },
-  async ({ company_id, page, limit, search, assignee_email, pentest_type, application_id }) => {
-    try {
-      return ok(await gateway.get_pentest_artifacts(company_id, {
-        page, limit, search, assigneeEmail: assignee_email, pentestType: pentest_type, applicationId: application_id,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list pentest artifacts');
-    }
-  }
-);
-
-server.registerTool(
-  'get_pentest_artifact',
-  {
-    description: 'Get a single AI-Pentest artifact by id, including scope and its executions.',
-    inputSchema: z.object({ artifact_id: z.number() }),
-    annotations: { title: 'Pentest Artifact Details', ...READ },
-  },
-  async ({ artifact_id }) => {
-    try {
-      return ok(await gateway.get_pentest_artifact(artifact_id));
-    } catch (err) {
-      return fail(err, 'Failed to get pentest artifact');
-    }
-  }
-);
-
-server.registerTool(
-  'get_pentest_execution',
-  {
-    description: 'Get the result/status of a single AI-Pentest execution by id (status, vulnerability count, severity breakdown, retest progress).',
-    inputSchema: z.object({ execution_id: z.number() }),
-    annotations: { title: 'Pentest Execution Result', ...READ },
-  },
-  async ({ execution_id }) => {
-    try {
-      return ok(await gateway.get_pentest_execution(execution_id));
-    } catch (err) {
-      return fail(err, 'Failed to get pentest execution');
-    }
-  }
-);
-
-server.registerTool(
-  'get_threat_model_artifacts',
-  {
-    description: 'List Threat Modeling artifacts for a company (label, scope, latest version). Optional: search, assignee_email, has_version.',
-    inputSchema: z.object({
-      company_id: z.number(),
-      page: z.number().optional(),
-      limit: z.number().optional(),
-      search: z.string().optional(),
-      assignee_email: z.string().optional(),
-      has_version: z.boolean().optional(),
-    }),
-    annotations: { title: 'List Threat Model Artifacts', ...READ },
-  },
-  async ({ company_id, page, limit, search, assignee_email, has_version }) => {
-    try {
-      return ok(await gateway.get_threat_model_artifacts(company_id, {
-        page, limit, search, assigneeEmail: assignee_email, hasVersion: has_version,
-      }));
-    } catch (err) {
-      return fail(err, 'Failed to list threat model artifacts');
-    }
-  }
-);
-
-server.registerTool(
-  'get_threat_model_artifact',
-  {
-    description: 'Get a single Threat Modeling artifact by id, including its versions (diagrams, notes, scope).',
-    inputSchema: z.object({ artifact_id: z.number() }),
-    annotations: { title: 'Threat Model Artifact Details', ...READ },
-  },
-  async ({ artifact_id }) => {
-    try {
-      return ok(await gateway.get_threat_model_artifact(artifact_id));
-    } catch (err) {
-      return fail(err, 'Failed to get threat model artifact');
-    }
-  }
-);
+  return server;
+}
 
 /**
  * START
@@ -1335,7 +641,14 @@ if (PORT) {
       res.writeHead(405).end();
       return;
     }
+    // Stateless HTTP: a fresh server + transport per request (SDK pattern). Reusing one
+    // McpServer across concurrent transports leaks state between requests.
+    const server = buildServer();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on('close', () => {
+      transport.close();
+      server.close();
+    });
     await server.connect(transport);
     await transport.handleRequest(req, res);
   });
@@ -1344,6 +657,7 @@ if (PORT) {
     console.error(`Conviso MCP Server running on HTTP port ${PORT}`);
   });
 } else {
+  const server = buildServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('Conviso MCP Server running on stdio');

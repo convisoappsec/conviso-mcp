@@ -107,6 +107,15 @@ export function buildMutationQuery(name, variables = {}, returnFields = null) {
   if (!m) {
     throw new Error(`Unknown mutation '${name}'. Call list_mutations to discover valid names.`);
   }
+  // Every catalogued mutation takes a single `input` object. Callers often pass the input
+  // fields bare (without the { input: ... } wrapper) — accept that instead of failing.
+  if (
+    m.args.length === 1 && m.args[0].name === 'input' &&
+    variables && typeof variables === 'object' && !Array.isArray(variables) &&
+    !('input' in variables) && Object.keys(variables).length > 0
+  ) {
+    variables = { input: variables };
+  }
   const opName = name.charAt(0).toUpperCase() + name.slice(1);
   const decls = m.args.map((a) => `$${a.name}: ${a.type}`).join(', ');
   const pass = m.args.map((a) => `${a.name}: $${a.name}`).join(', ');

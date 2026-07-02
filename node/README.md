@@ -2,7 +2,7 @@
 
 # Conviso MCP Server
 
-This repository contains both a Python and a Node.js MCP server. This `node/` folder is the Node.js bundle and is packaged into the `.mcpb` bundle for MCP clients that run Node runtimes.
+This `node/` folder contains the Conviso MCP server (Node.js). It is published to npm as `@convisoappsec/mcp` and packaged into the `.mcpb` bundle for MCP clients.
 
 ## 🛠 Available Tools (Capabilities)
 
@@ -15,8 +15,6 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 | **Vulnerabilities** | `get_issues` | List vulnerabilities by company or project. |
 | **Vulnerabilities** | `get_issue` | Technical details, including **code snippets** and raw requests/responses. |
 | **Vulnerabilities** | `get_top_vulnerabilities` | Risk overview (vulnerability count by severity). |
-| **Vulnerabilities** | `get_issues_by_asset_id` | List vulnerabilities for a company filtered by a single asset ID. |
-| **Vulnerabilities** | `get_issues_by_project_id` | List vulnerabilities for a company filtered by a project ID. |
 | **Management** | `get_projects` | List active security projects. |
 | **Management** | `get_project` | Get specific project in Conviso Platform by project ID. |
 | **Assets** | `get_assets` | List assets mapped within the platform. |
@@ -68,20 +66,6 @@ npm install
 export CONVISO_API_KEY=your_api_key_here
 npm start
 ```
-
-## Staging (optional)
-
-Set the `STAGING` environment variable to `true` to make the server use
-`https://staging.convisoappsec.com` instead of the production API.
-
-Example:
-
-```bash
-# staging (testing only)
-export STAGING=true
-npm start
-```
-
 
 ## Client configuration examples
 

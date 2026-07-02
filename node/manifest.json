@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling) from MCP clients.",
   "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
   "author": {
@@ -43,15 +43,7 @@
     },
     {
       "name": "get_issues",
-      "description": "List vulnerabilities for a company with rich filtering (severity, status, SLA, dates, assignee) and sorting."
-    },
-    {
-      "name": "get_issues_by_asset_id",
-      "description": "List vulnerabilities for a company filtered by a single asset ID, with the full filter set."
-    },
-    {
-      "name": "get_issues_by_project_id",
-      "description": "List vulnerabilities for a company filtered by a project ID, with the full filter set."
+      "description": "List vulnerabilities for a company with rich filtering (project, asset, severity, status, SLA, dates, assignee) and sorting."
     },
     {
       "name": "get_top_vulnerabilities",
