@@ -557,6 +557,29 @@ class GraphQLClient {
     return this.execute(PROJECTS_QUERY, variables);
   }
 
+  async get_project_types(search = null) {
+    const query = `
+      query GetProjectTypes($page: Int, $limit: Int, $params: ProjectTypeSearch) {
+        projectTypes(page: $page, limit: $limit, params: $params) {
+          collection { id code label description defaultDuration }
+          metadata { totalCount totalPages currentPage limitValue }
+        }
+      }`;
+    const params = search ? { labelCont: search } : undefined;
+    return this.execute(query, { page: 1, limit: 100, params });
+  }
+
+  async get_project_statuses() {
+    const query = `
+      query GetProjectStatuses($page: Int, $limit: Int) {
+        projectStatuses(page: $page, limit: $limit) {
+          collection { id label isInitial }
+          metadata { totalCount }
+        }
+      }`;
+    return this.execute(query, { page: 1, limit: 100 });
+  }
+
   async get_project_by_id(project_id) {
     const query = `
         query GetProject($id: ID!) {

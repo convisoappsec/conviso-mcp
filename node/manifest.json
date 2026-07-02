@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling) from MCP clients.",
   "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
   "author": {
@@ -22,7 +22,9 @@
     "entry_point": "${__dirname}/src/conviso_mcp/server.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/src/conviso_mcp/server.js"],
+      "args": [
+        "${__dirname}/src/conviso_mcp/server.js"
+      ],
       "env": {
         "CONVISO_API_KEY": "${user_config.api_key}"
       }
@@ -56,6 +58,14 @@
     {
       "name": "get_project",
       "description": "Retrieve detailed metadata for a specific project by its ID."
+    },
+    {
+      "name": "get_project_types",
+      "description": "List the available project types (id, code, label) — source of the type_id required by create_project."
+    },
+    {
+      "name": "get_project_statuses",
+      "description": "List the available project statuses (id, label, isInitial)."
     },
     {
       "name": "get_asset",
@@ -191,14 +201,25 @@
     }
   ],
   "tools_generated": false,
-  "keywords": ["mcp","conviso","security","vulnerabilities","appsec","mcp-server"],
+  "keywords": [
+    "mcp",
+    "conviso",
+    "security",
+    "vulnerabilities",
+    "appsec",
+    "mcp-server"
+  ],
   "license": "MIT",
   "privacy_policies": [
     "https://www.iubenda.com/privacy-policy/55589285"
   ],
   "compatibility": {
     "claude_desktop": ">=1.0.0",
-    "platforms": ["darwin", "win32", "linux"],
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
     "runtimes": {
       "node": ">=20.10.0"
     }

@@ -53,8 +53,8 @@ test('server boots on stdio and lists all tools', async () => {
   const tools = await handshake();
   const names = tools.map((t) => t.name);
 
-  assert.equal(names.length, 40, `expected 40 tools, got ${names.length}: ${names.join(',')}`);
-  for (const required of ['get_companies', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets']) {
+  assert.equal(names.length, 42, `expected 42 tools, got ${names.length}: ${names.join(',')}`);
+  for (const required of ['get_companies', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types']) {
     assert.ok(names.includes(required), `missing tool ${required}`);
   }
   // Consolidated away in v0.6.0 — must not resurface.

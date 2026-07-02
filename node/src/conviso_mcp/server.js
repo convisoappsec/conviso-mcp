@@ -231,6 +231,18 @@ function buildServer() {
     schema: z.object({ project_id: z.number() }),
   }, ({ project_id }) => gql.get_project_by_id(project_id));
 
+  tool('get_project_types', {
+    title: 'List Project Types',
+    desc: 'List the available project types (id, code, label, description). Use this to find the type_id required by create_project. Optional: search (label substring).',
+    schema: z.object({ search: z.string().optional() }),
+  }, ({ search }) => gql.get_project_types(search));
+
+  tool('get_project_statuses', {
+    title: 'List Project Statuses',
+    desc: 'List the available project statuses (id, label, isInitial). Use to find valid status values for project status updates.',
+    schema: z.object({}),
+  }, () => gql.get_project_statuses());
+
   tool('get_asset', {
     title: 'Asset Details',
     desc: 'Get an asset by ID.',
@@ -547,7 +559,7 @@ function buildServer() {
 
   tool('create_project', {
     title: 'Create Project',
-    desc: 'Create a project. Required: company_id, type_id (project type id), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; extra = advanced CreateProjectInput fields (assetsIds, tags, allocatedPortalUserEmails...).',
+    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; extra = advanced CreateProjectInput fields (assetsIds, tags, allocatedPortalUserEmails...).',
     schema: z.object({
       company_id: z.number(),
       type_id: z.number(),
