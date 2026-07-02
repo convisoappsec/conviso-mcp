@@ -44,6 +44,15 @@ test('create project input maps snake_case to camelCase', () => {
   });
 });
 
+test('create project maps requirement_ids to playbooksIds and asset_ids to assetsIds', () => {
+  const v = buildCreateProjectInput({
+    company_id: 1, type_id: 2, label: 'L', goal: 'G', scope: 'S', start_date: '2026-01-01',
+    requirement_ids: [7, 8], asset_ids: [30552],
+  });
+  assert.deepEqual(v.input.playbooksIds, [7, 8]);
+  assert.deepEqual(v.input.assetsIds, [30552]);
+});
+
 test('extra is merged into the input', () => {
   const v = buildCreateAssetInput({ company_id: 1, name: 'n', tags: ['a'], extra: { repoUrl: 'https://x' } });
   assert.equal(v.input.companyId, 1);

@@ -60,6 +60,9 @@ export function buildCreateProjectInput(a = {}) {
       scope: a.scope,
       startDate: a.start_date,
       endDate: a.end_date,
+      // Platform quirk: requirement/checklist IDs are called "playbooks" on this input.
+      playbooksIds: a.requirement_ids,
+      assetsIds: a.asset_ids,
       ...(a.extra || {}),
     }),
   };
@@ -790,7 +793,8 @@ class GraphQLClient {
     return this.execute(query, { companyId: company_id, id: ticket_id });
   }
 
-  async get_requirements(scope_id, { page = 1, limit = 25, filters } = {}) {
+  async get_requirements(scope_id, { page = 1, limit = 25, search, filters } = {}) {
+    if (search) filters = { ...(filters || {}), label: search };
     const query = `
       query GetRequirements($scopeId: Int!, $pagination: BasePaginationInput!, $filters: RequirementsFilterInput) {
         requirements(scopeId: $scopeId, pagination: $pagination, filters: $filters) {

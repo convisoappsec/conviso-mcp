@@ -1,6 +1,6 @@
 {
   "name": "@convisoappsec/mcp",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "MCP Server for Conviso Platform integration",
   "type": "module",
   "main": "src/conviso_mcp/server.js",

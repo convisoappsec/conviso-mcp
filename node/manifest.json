@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling) from MCP clients.",
   "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
   "author": {
@@ -105,7 +105,7 @@
     },
     {
       "name": "get_requirements",
-      "description": "List security requirements/checklists for a scope (company) id, paginated."
+      "description": "List security requirements/checklists (playbooks) for a company, searchable by label — source of the requirement_ids used by create_project."
     },
     {
       "name": "get_requirement",
@@ -177,7 +177,7 @@
     },
     {
       "name": "create_project",
-      "description": "Curated shortcut: create a project."
+      "description": "Curated shortcut: create a project, optionally associating requirements (requirement_ids) and assets (asset_ids)."
     },
     {
       "name": "create_asset",

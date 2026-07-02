@@ -361,14 +361,19 @@ function buildServer() {
 
   tool('get_requirements', {
     title: 'List Requirements',
-    desc: 'List security requirements/checklists for a scope (company) id, paginated. Optional: filters (raw RequirementsFilterInput).',
+    desc: 'List security requirements/checklists (also called playbooks) for a scope (company) id, paginated. Optional: search (label substring — use to find a requirement by name), only_from_company (exclude global requirements), filters (raw RequirementsFilterInput). To attach requirements to a NEW project, pass their ids as requirement_ids in create_project.',
     schema: z.object({
       scope_id: z.number(),
       page: z.number().optional(),
       limit: z.number().optional(),
+      search: z.string().optional(),
+      only_from_company: z.boolean().optional(),
       filters: z.record(z.string(), z.any()).optional(),
     }),
-  }, ({ scope_id, page, limit, filters }) => gql.get_requirements(scope_id, { page, limit, filters }));
+  }, ({ scope_id, page, limit, search, only_from_company, filters }) => {
+    if (only_from_company !== undefined) filters = { ...(filters || {}), onlyFromCompany: only_from_company };
+    return gql.get_requirements(scope_id, { page, limit, search, filters });
+  });
 
   tool('get_requirement', {
     title: 'Requirement Details',
@@ -559,7 +564,7 @@ function buildServer() {
 
   tool('create_project', {
     title: 'Create Project',
-    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; extra = advanced CreateProjectInput fields (assetsIds, tags, allocatedPortalUserEmails...).',
+    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, allocatedPortalUserEmails...).',
     schema: z.object({
       company_id: z.number(),
       type_id: z.number(),
@@ -568,6 +573,8 @@ function buildServer() {
       scope: z.string(),
       start_date: z.string(),
       end_date: z.string().optional(),
+      requirement_ids: z.array(z.number()).optional(),
+      asset_ids: z.array(z.number()).optional(),
       extra: z.record(z.string(), z.any()).optional(),
     }),
     write: true,
