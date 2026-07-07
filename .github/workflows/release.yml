@@ -1,0 +1,120 @@
+name: Release
+
+# Rolls out a new version only when main advances AND the version was bumped.
+# Trigger: push to main (post-merge). Guard: release only if no git tag exists
+# for the current node/package.json version yet (idempotent across re-runs and
+# squash merges).
+#
+# One-time setup required before the first run can publish to npm:
+#   - npmjs.com > @convisoappsec/mcp > Settings > Trusted Publisher:
+#     add this repo + workflow "Release" + job "npm" (GitHub Actions OIDC).
+#     No NODE_AUTH_TOKEN secret is used.
+on:
+  push:
+    branches: [main]
+
+# Least-privilege. id-token: npm OIDC + provenance. packages: GHCR push.
+# contents: push the release tag.
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Detect version change
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.v.outputs.changed }}
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need tags to test idempotency
+      - id: v
+        run: |
+          version=$(node -p "require('./node/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version already released — skipping."
+            exit 0
+          fi
+          # Only enforce parity when we are actually about to publish.
+          py=$(sed -nE 's/^version = "([^"]+)".*/\1/p' python/pyproject.toml | head -1)
+          if [ "$py" != "$version" ]; then
+            echo "::error::Version parity mismatch — node=$version python=$py. Align both before releasing."
+            exit 1
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Releasing v$version."
+
+  npm:
+    name: Publish to npm
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment: release # attach required reviewers here for an extra manual gate
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing (OIDC) needs npm >= 11.5.1; node 20 ships npm 10.
+      - run: npm install -g npm@latest
+      # No build step (package "files" is just src) — skip scripts for safety.
+      - run: npm publish --provenance --access public --ignore-scripts
+
+  docker:
+    name: Build & push image (GHCR)
+    needs: check
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment: release
+    strategy:
+      matrix:
+        include:
+          # README builds the python image as "conviso-mcp"; keep that name.
+          - image: conviso-mcp
+            context: python
+            dockerfile: python/Dockerfile
+          - image: conviso-mcp-node
+            context: node
+            dockerfile: node/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # built-in, short-lived; no external secret
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.check.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest
+
+  tag:
+    name: Tag release
+    needs: [check, npm, docker]
+    if: needs.check.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ needs.check.outputs.version }}"
+          git push origin "v${{ needs.check.outputs.version }}"
