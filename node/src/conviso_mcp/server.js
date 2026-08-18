@@ -13,7 +13,7 @@ import pkg from '../../package.json' with { type: 'json' };
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
-const BASE_URL = 'http://conviso.docker.localhost';
+const BASE_URL = 'https://app.convisoappsec.com';
 const gql = new GraphQLClient(`${BASE_URL}/graphql`, process.env.CONVISO_API_KEY || '');
 
 function sanitizeError(err, message = 'Request failed') {
