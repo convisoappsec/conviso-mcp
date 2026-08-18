@@ -156,6 +156,10 @@
       "description": "Get a single Threat Modeling artifact by id, including its versions (diagrams, notes, scope)."
     },
     {
+      "name": "get_company_id_from_object",
+      "description": "Resolve company_id from an existing issue, asset, project, pentest artifact/execution, or threat-model artifact before calling a mutation."
+    },
+    {
       "name": "list_mutations",
       "description": "Discover the available write operations (name, description, category, destructive flag). Step 1 of the write workflow."
     },

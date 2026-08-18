@@ -13,7 +13,7 @@ import pkg from '../../package.json' with { type: 'json' };
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
 
-const BASE_URL = 'https://app.convisoappsec.com';
+const BASE_URL = 'http://conviso.docker.localhost';
 const gql = new GraphQLClient(`${BASE_URL}/graphql`, process.env.CONVISO_API_KEY || '');
 
 function sanitizeError(err, message = 'Request failed') {
@@ -36,7 +36,9 @@ function sanitizeError(err, message = 'Request failed') {
     status,
   });
 
-  const result = { error: message, status, error_id };
+  // Only errors deliberately marked by our own code may override the generic tool error.
+  // Never expose arbitrary upstream messages here.
+  const result = { error: err?.publicMessage || message, status, error_id };
   // GraphQL errors describe the caller's own request (e.g. a missing required field) — pass
   // them through so the model can fix the input on the next attempt.
   if (Array.isArray(err?.graphqlErrors) && err.graphqlErrors.length) {
@@ -62,6 +64,7 @@ function ok(data) {
 // Shared enum strings so tool descriptions state each list exactly once.
 const SEVERITIES = 'NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL';
 const ISSUE_STATUSES = 'CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED';
+const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', 'pentest_execution', 'threat_model_artifact'];
 
 /**
  * Build a fresh McpServer with all tools registered. stdio mode uses one instance for the
@@ -75,7 +78,10 @@ function buildServer() {
   });
 
   // Registration helper: one place for the try/catch, error shape, and annotations.
-  function tool(name, { title, desc, schema, write = false, destructive = false, local = false }, handler) {
+  function tool(name, {
+    title, desc, schema, write = false, destructive = false, local = false,
+    policy = write, companyId = (args) => args.company_id,
+  }, handler) {
     server.registerTool(
       name,
       {
@@ -91,6 +97,8 @@ function buildServer() {
       },
       async (args) => {
         try {
+          const checkPolicy = typeof policy === 'function' ? policy(args) : policy;
+          if (checkPolicy) await gql.assertMcpWriteEnabled(await companyId(args));
           return ok(await handler(args));
         } catch (err) {
           return ok(sanitizeError(err, `${name} failed`));
@@ -120,6 +128,15 @@ function buildServer() {
     desc: 'Get a company by ID: plan, integrations, branding metadata.',
     schema: z.object({ company_id: z.number() }),
   }, ({ company_id }) => gql.get_company_by_id(company_id));
+
+  tool('get_company_id_from_object', {
+    title: 'Resolve Company from Object',
+    desc: `Resolve the company_id that owns an existing Conviso object. IMPORTANT: mutation tools require company_id for the MCP write-policy check. When the user asks for a write and provides only an object ID (for example issue_id, asset_id, project_id, pentest artifact/execution ID, or threat-model artifact ID), call this tool first with the matching object_type, then pass the returned company_id to the mutation tool. Do not guess a company_id and do not pass the object ID as company_id. Supported object_type values: ${COMPANY_OBJECT_TYPES.join(', ')}. This lookup is for write preparation; it does not perform a mutation.`,
+    schema: z.object({
+      object_type: z.enum(COMPANY_OBJECT_TYPES),
+      object_id: z.number(),
+    }),
+  }, ({ object_type, object_id }) => gql.getCompanyIdFromObject(object_type, object_id));
 
   tool('get_issue', {
     title: 'Issue Details',
@@ -504,14 +521,16 @@ function buildServer() {
 
   tool('execute_mutation', {
     title: 'Execute Mutation',
-    desc: 'Run any permitted write operation by name (see list_mutations). variables is the mutation input — pass { input: {...} } or the input fields directly (auto-wrapped). Optional return_fields overrides the returned selection set. WARNING: performs writes; delete/bulk operations are destructive — confirm intent first.',
+    desc: 'Run any permitted write operation by name (see list_mutations). company_id is required only for the MCP write-policy check and is not added to the GraphQL mutation input. If the user supplied an object ID but no company, call get_company_id_from_object first. variables is the mutation input — pass { input: {...} } or the input fields directly (auto-wrapped). Optional return_fields overrides the returned selection set. WARNING: performs writes; delete/bulk operations are destructive — confirm intent first.',
     schema: z.object({
+      company_id: z.number(),
       name: z.string(),
       variables: z.record(z.string(), z.any()).optional(),
       return_fields: z.string().optional(),
     }),
     write: true,
     destructive: true,
+    policy: ({ name }) => name !== 'createTicket',
   }, ({ name, variables = {}, return_fields = null }) =>
     gql.executeMutation(name, variables, return_fields));
 
@@ -521,8 +540,9 @@ function buildServer() {
 
   tool('change_issue_status', {
     title: 'Change Issue Status',
-    desc: `Change an issue's status. status: one of ${ISSUE_STATUSES}. Optional reason; extra = advanced ChangeIssueStatusInput fields (e.g. riskAcceptedUntil).`,
+    desc: `Change an issue's status. Required: company_id and issue_id; if only issue_id is known, call get_company_id_from_object first. status: one of ${ISSUE_STATUSES}. Optional reason; extra = advanced ChangeIssueStatusInput fields (e.g. riskAcceptedUntil).`,
     schema: z.object({
+      company_id: z.number(),
       issue_id: z.number(),
       status: z.string(),
       reason: z.string().optional(),
@@ -533,8 +553,9 @@ function buildServer() {
 
   tool('create_source_code_vulnerability', {
     title: 'Create Source Code Vulnerability',
-    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field.`,
+    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. Required: company_id and asset_id; if only asset_id is known, call get_company_id_from_object first. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field.`,
     schema: z.object({
+      company_id: z.number(),
       asset_id: z.number(),
       title: z.string(),
       description: z.string(),
@@ -610,19 +631,20 @@ function buildServer() {
       extra: z.record(z.string(), z.any()).optional(),
     }),
     write: true,
+    policy: false,
   }, (a) => gql.create_ticket(a));
 
   tool('run_dast', {
     title: 'Run DAST',
-    desc: 'Start a Conviso DAST scan on an asset (startConvisoDast). Required: asset_id.',
-    schema: z.object({ asset_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
+    desc: 'Start a Conviso DAST scan on an asset (startConvisoDast). Required: company_id and asset_id. If only asset_id is known, call get_company_id_from_object first.',
+    schema: z.object({ company_id: z.number(), asset_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
     write: true,
   }, (a) => gql.run_dast(a));
 
   tool('trigger_pentest', {
     title: 'Trigger AI-Pentest',
-    desc: 'Trigger an AI-Pentest execution from an existing pentest artifact (createPentestExecution). Required: artifact_id.',
-    schema: z.object({ artifact_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
+    desc: 'Trigger an AI-Pentest execution from an existing pentest artifact (createPentestExecution). Required: company_id and artifact_id. If only artifact_id is known, call get_company_id_from_object with object_type pentest_artifact first.',
+    schema: z.object({ company_id: z.number(), artifact_id: z.number(), extra: z.record(z.string(), z.any()).optional() }),
     write: true,
   }, (a) => gql.trigger_pentest(a));
 

@@ -31,6 +31,7 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 | **Supply chain** | `get_sbom_components` | SBOM / dependency components per company. |
 | **AI-Pentest** | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
 | **Threat Modeling** | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
+| **Utilities** | `get_company_id_from_object` | Resolve the owning company from an issue, asset, project, pentest or threat-model object ID before a write. |
 | **Writes — engine** | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run the permitted write operations below. |
 | **Writes — Issues** | `execute_mutation` | Create, update, delete and change status of vulnerabilities/issues. |
 | **Writes — Assets** | `execute_mutation` | Create and update assets; run a DAST scan. |

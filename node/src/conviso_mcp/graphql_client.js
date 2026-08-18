@@ -464,6 +464,14 @@ const httpClient = axios.create({
 
 const RETRYABLE_STATUS = new Set([429, 502, 503]);
 
+const MCP_WRITE_POLICY_QUERY = `
+  query McpWritePolicy($companyId: ID!) {
+    policyControls(companyId: $companyId) {
+      enableMcpWrite
+    }
+  }
+`;
+
 class GraphQLClient {
   constructor(endpoint, apiKey) {
     this.endpoint = endpoint;
@@ -486,6 +494,72 @@ class GraphQLClient {
       await new Promise((r) => setTimeout(r, 300));
       return this.#post(query, variables);
     }
+  }
+
+  async assertMcpWriteEnabled(companyId) {
+    if (companyId === undefined || companyId === null) {
+      const error = new Error('Could not determine company for MCP write policy check');
+      error.status = 400;
+      throw error;
+    }
+    const data = await this.execute(MCP_WRITE_POLICY_QUERY, { companyId });
+    if (data?.policyControls?.enableMcpWrite !== true) {
+      const error = new Error(`MCP write operations are disabled by company ${companyId} policy`);
+      error.status = 403;
+      // Explicitly safe to return to the MCP caller. Other upstream errors stay sanitized.
+      error.publicMessage = error.message;
+      error.authHint = `Enable MCP write operations in the policy controls for company ${companyId}`;
+      throw error;
+    }
+  }
+
+  async getCompanyIdFromObject(objectType, objectId) {
+    // This is deliberately an object inventory, not a mutation inventory. It gives the
+    // model an explicit read step when a user supplies an entity ID but no company ID.
+    const lookups = {
+      issue: {
+        query: 'issue(id: $id) { asset { company { id } } }',
+        companyId: (data) => data?.issue?.asset?.company?.id,
+      },
+      asset: {
+        query: 'asset(id: $id) { company { id } }',
+        companyId: (data) => data?.asset?.company?.id,
+      },
+      project: {
+        query: 'project(id: $id) { company { id } }',
+        companyId: (data) => data?.project?.company?.id,
+      },
+      pentest_artifact: {
+        query: 'pentestArtifact(id: $id) { company { id } }',
+        companyId: (data) => data?.pentestArtifact?.company?.id,
+      },
+      pentest_execution: {
+        query: 'pentestExecution(id: $id) { project { company { id } } }',
+        companyId: (data) => data?.pentestExecution?.project?.company?.id,
+      },
+      threat_model_artifact: {
+        query: 'threatModelArtifact(id: $id) { company { id } }',
+        companyId: (data) => data?.threatModelArtifact?.company?.id,
+      },
+    };
+    const lookup = lookups[objectType];
+    if (!lookup) {
+      const error = new Error(`Unsupported object type '${objectType}'`);
+      error.status = 400;
+      throw error;
+    }
+    const data = await this.execute(`
+      query CompanyFromObject($id: ID!) {
+        ${lookup.query}
+      }
+    `, { id: objectId });
+    const companyId = lookup.companyId(data);
+    if (companyId === undefined || companyId === null) {
+      const error = new Error(`Could not find a company for ${objectType} '${objectId}'`);
+      error.status = 404;
+      throw error;
+    }
+    return { object_type: objectType, object_id: objectId, company_id: Number(companyId) };
   }
 
   async #post(query, variables) {

@@ -30,6 +30,7 @@ The server exposes the following tools to the LLM:
 | **Supply chain**  | `get_sbom_components` | SBOM / dependency components per company. |
 | **AI-Pentest**  | `get_pentest_artifacts` / `get_pentest_artifact` / `get_pentest_execution` | Pentest artifacts, scope and execution results. |
 | **Threat Modeling**  | `get_threat_model_artifacts` / `get_threat_model_artifact` | Threat model artifacts and versions. |
+| **Utilities** | `get_company_id_from_object` | Resolve the owning company from an issue, asset, project, pentest or threat-model object ID before a write. |
 | **Writes — engine**  | `list_mutations` / `describe_mutation` / `execute_mutation` | Discover, describe and run the permitted write operations below. |
 | **Writes — Issues**  | `execute_mutation` | Create, update, delete and change status of vulnerabilities/issues. |
 | **Writes — Assets**  | `execute_mutation` | Create and update assets; run a DAST scan. |
@@ -56,12 +57,16 @@ Use the discover → describe → execute workflow:
 1. `list_mutations({ search: "issue" })` — find the operation you need.
 2. `describe_mutation({ name: "changeIssueStatus" })` — get its input fields (required,
    allowed enum values) and the fields returned by default.
-3. `execute_mutation({ name: "changeIssueStatus", variables: { input: { id: "123", status: "FALSE_POSITIVE", reason: "duplicate" } } })`
+3. If only an object ID is known, call `get_company_id_from_object({ object_type: "issue", object_id: 123 })`.
+4. `execute_mutation({ company_id: 42, name: "changeIssueStatus", variables: { input: { id: "123", status: "FALSE_POSITIVE", reason: "duplicate" } } })`
    — run it. Optionally pass `return_fields` to override the returned selection set.
 
 **Safety:** these are writes. `execute_mutation` is annotated `destructiveHint: true`, and
 delete/bulk/remove/cancel/revoke operations are flagged destructive — MCP clients surface
 these for confirmation. Confirm intent before running destructive or bulk operations.
+Every mutation tool requires `company_id` so the server can check the company's MCP write
+policy. This is a cooperative client-side safeguard against unintended LLM writes, not an
+authorization boundary; normal API authorization remains enforced by the Conviso Platform.
 
 ## 🚀 Installation and Configuration
 

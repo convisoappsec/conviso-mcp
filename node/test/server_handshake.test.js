@@ -53,8 +53,8 @@ test('server boots on stdio and lists all tools', async () => {
   const tools = await handshake();
   const names = tools.map((t) => t.name);
 
-  assert.equal(names.length, 42, `expected 42 tools, got ${names.length}: ${names.join(',')}`);
-  for (const required of ['get_companies', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types']) {
+  assert.equal(names.length, 43, `expected 43 tools, got ${names.length}: ${names.join(',')}`);
+  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types']) {
     assert.ok(names.includes(required), `missing tool ${required}`);
   }
   // Consolidated away in v0.6.0 — must not resurface.
@@ -69,4 +69,8 @@ test('server boots on stdio and lists all tools', async () => {
   const exec = tools.find((t) => t.name === 'execute_mutation');
   assert.equal(exec.annotations.destructiveHint, true);
   assert.equal(exec.annotations.readOnlyHint, false);
+  assert.ok(exec.inputSchema.required.includes('company_id'));
+  const resolver = tools.find((t) => t.name === 'get_company_id_from_object');
+  assert.equal(resolver.annotations.readOnlyHint, true);
+  assert.match(resolver.description, /call this tool first/i);
 });
