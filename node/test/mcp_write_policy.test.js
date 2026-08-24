@@ -49,6 +49,26 @@ test('assertMcpWriteEnabled rejects disabled and missing policies', async () => 
   }
 });
 
+test('assertMcpWriteEnabled allows writes when the backend lacks only the policy field', async () => {
+  const client = new GraphQLClient('unused', 'test-key');
+  const error = new Error('GraphQL error');
+  error.graphqlErrors = [
+    "Field 'enableMcpWrite' doesn't exist on type 'PolicyControls'",
+  ];
+  client.execute = async () => { throw error; };
+
+  await client.assertMcpWriteEnabled(123);
+});
+
+test('assertMcpWriteEnabled still rejects other GraphQL errors', async () => {
+  const client = new GraphQLClient('unused', 'test-key');
+  const error = new Error('GraphQL error');
+  error.graphqlErrors = ["Field 'companyId' is invalid"];
+  client.execute = async () => { throw error; };
+
+  await assert.rejects(client.assertMcpWriteEnabled(123), (caught) => caught === error);
+});
+
 test('assertMcpWriteEnabled rejects an unresolved company without making a request', async () => {
   const client = new GraphQLClient('http://127.0.0.1:1/graphql', 'test-key');
   await assert.rejects(

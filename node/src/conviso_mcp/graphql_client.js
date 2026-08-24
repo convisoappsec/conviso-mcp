@@ -463,6 +463,8 @@ const httpClient = axios.create({
 });
 
 const RETRYABLE_STATUS = new Set([429, 502, 503]);
+const MCP_WRITE_POLICY_FIELD_MISSING =
+  "Field 'enableMcpWrite' doesn't exist on type 'PolicyControls'";
 
 const MCP_WRITE_POLICY_QUERY = `
   query McpWritePolicy($companyId: ID!) {
@@ -502,7 +504,17 @@ class GraphQLClient {
       error.status = 400;
       throw error;
     }
-    const data = await this.execute(MCP_WRITE_POLICY_QUERY, { companyId });
+    let data;
+    try {
+      data = await this.execute(MCP_WRITE_POLICY_QUERY, { companyId });
+    } catch (error) {
+      // Older backends do not expose the policy field yet. Their effective default is
+      // enabled, matching the backend default once the field becomes available.
+      const fieldNotDeployed = error.graphqlErrors?.some((message) =>
+        message.startsWith(MCP_WRITE_POLICY_FIELD_MISSING));
+      if (fieldNotDeployed) return;
+      throw error;
+    }
     if (data?.policyControls?.enableMcpWrite !== true) {
       const error = new Error(`MCP write operations are disabled by company ${companyId} policy`);
       error.status = 403;
