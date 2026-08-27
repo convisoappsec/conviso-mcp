@@ -1,0 +1,35 @@
+{
+  "name": "conviso-mcp",
+  "displayName": "Conviso Platform",
+  "version": "0.6.3",
+  "description": "Access Conviso Platform application security data and workflows from Cursor.",
+  "author": {
+    "name": "Conviso"
+  },
+  "homepage": "https://github.com/convisoappsec/conviso-mcp",
+  "repository": "https://github.com/convisoappsec/conviso-mcp",
+  "license": "MIT",
+  "keywords": [
+    "appsec",
+    "conviso",
+    "mcp",
+    "security",
+    "vulnerabilities"
+  ],
+  "logo": "node/assets/conviso_icon.png",
+  "mcpServers": "./mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "CONVISO_API_KEY": {
+        "type": "string",
+        "title": "Conviso API Key",
+        "description": "API key used to authenticate with Conviso Platform.",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "CONVISO_API_KEY"
+    ]
+  }
+}
