@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "conviso": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
