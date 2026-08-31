@@ -104,6 +104,21 @@ The same JSON works for Cursor (`.cursor/mcp.json`) and other MCP clients.
 > paths instead: `"command": "/absolute/path/to/node"`, `"args": ["/absolute/path/to/node_modules/@convisoappsec/mcp/src/conviso_mcp/server.js"]`
 > after `npm install -g @convisoappsec/mcp`.
 
+### Cursor Marketplace
+
+This repository is also packaged as a Cursor Plugin. The plugin manifest is located at
+`.cursor-plugin/plugin.json`, and `mcp.json` starts the published `@convisoappsec/mcp` package.
+
+To use it in Cursor:
+
+1. Install **Conviso Platform** from the Cursor Marketplace (after the plugin is published), or
+   import this repository as a plugin/team marketplace entry.
+2. Open **Cursor Settings → Plugins → Conviso Platform → Configure**.
+3. Set `CONVISO_API_KEY` to your Conviso Platform API key.
+4. Reload Cursor if the `conviso` MCP server does not start automatically.
+
+Node.js 20.10 or newer and `npx` must be available on Cursor's `PATH`.
+
 ### 2. Claude Desktop one-click bundle
 
 Download `conviso-mcp-<version>.mcpb` from the [latest GitHub Release](https://github.com/convisoappsec/conviso-mcp/releases),

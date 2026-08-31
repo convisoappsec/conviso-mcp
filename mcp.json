@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "conviso": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@convisoappsec/mcp@0.6.4"
+      ],
+      "env": {
+        "CONVISO_API_KEY": "${CONVISO_API_KEY}"
+      }
+    }
+  }
+}
