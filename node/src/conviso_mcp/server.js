@@ -400,9 +400,34 @@ function buildServer() {
 
   tool('get_project_requirements', {
     title: 'Project Requirements',
-    desc: 'List the requirements/checklists attached to a project.',
+    desc: 'List the requirements/checklists attached to a project. The returned project-requirement id is the project_requirement_id used by get_project_requirement_activities. When the user knows only the project, call this tool first, choose the requested requirement from the results (ask only if ambiguous), then call get_project_requirement_activities.',
     schema: z.object({ project_id: z.number() }),
   }, ({ project_id }) => gql.get_project_requirements(project_id));
+
+  tool('get_project_requirement_activities', {
+    title: 'Project Requirement Activities',
+    desc: 'List the instantiated activities for one requirement/checklist within a project, including status, permitted transitions, assignees, references, reason, and history count. Requires the project-requirement association id, not the requirement template id. If the user provides only a project, first call get_project_requirements(project_id) to discover project_requirement_id, then call this tool for the relevant requirement; repeat for each returned requirement when the user asks for all project checklist activities.',
+    schema: z.object({
+      project_id: z.number(),
+      project_requirement_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      title: z.string().optional(),
+      sort_by: z.string().optional().describe('ActivitySortByEnum value; defaults to SORT.'),
+      descending: z.boolean().optional(),
+      attachment_actions_only: z.boolean().optional(),
+    }),
+  }, ({
+    project_id, project_requirement_id, page, limit, title, sort_by,
+    descending, attachment_actions_only,
+  }) => gql.get_project_requirement_activities(project_id, project_requirement_id, {
+    page,
+    limit,
+    title,
+    sortBy: sort_by,
+    descending,
+    attachmentActionsOnly: attachment_actions_only,
+  }));
 
   tool('get_applications', {
     title: 'List Applications',

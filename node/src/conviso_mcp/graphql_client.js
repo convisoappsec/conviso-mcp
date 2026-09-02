@@ -454,6 +454,29 @@ export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts =
   return { page, limit, params, sortBy, descending };
 }
 
+export function buildProjectRequirementActivitiesVariables(projectId, projectRequirementId, {
+  page = 1,
+  limit = 10,
+  title = '',
+  sortBy = 'SORT',
+  descending = false,
+  attachmentActionsOnly,
+} = {}) {
+  return {
+    page,
+    limit,
+    sortBy,
+    descending,
+    historyPagination: { page: 1, perPage: limit },
+    attachmentActionsOnly,
+    params: compact({
+      projectId,
+      projectRequirementId,
+      title,
+    }),
+  };
+}
+
 // Shared HTTP client: keep-alive reuses the TLS connection across the many sequential
 // calls an agent session makes; the timeout stops a hung upstream from hanging a tool
 // call (and the MCP client) forever.
@@ -909,6 +932,36 @@ class GraphQLClient {
         }
       }`;
     return this.execute(query, { projectId: project_id });
+  }
+
+  async get_project_requirement_activities(project_id, project_requirement_id, options = {}) {
+    const query = `
+      query GetProjectRequirementActivities(
+        $page: Int
+        $limit: Int
+        $sortBy: ActivitySortByEnum
+        $descending: Boolean
+        $historyPagination: PaginationInput!
+        $attachmentActionsOnly: Boolean
+        $params: ActivitiesSearch!
+      ) {
+        activities(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending: $descending) {
+          collection {
+            id title status permittedStatus description reference updatedAt reason
+            history(pagination: $historyPagination, attachmentActionsOnly: $attachmentActionsOnly) {
+              metadata { totalCount }
+            }
+            portalUser { avatarUrl email name }
+            check { description id label }
+            assignedUsers { avatarUrl name email }
+          }
+          metadata { currentPage limitValue totalCount totalPages }
+        }
+      }`;
+    return this.execute(
+      query,
+      buildProjectRequirementActivitiesVariables(project_id, project_requirement_id, options),
+    );
   }
 
   async get_applications(company_id, search = null) {
