@@ -53,8 +53,8 @@ test('server boots on stdio and lists all tools', async () => {
   const tools = await handshake();
   const names = tools.map((t) => t.name);
 
-  assert.equal(names.length, 43, `expected 43 tools, got ${names.length}: ${names.join(',')}`);
-  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types']) {
+  assert.equal(names.length, 44, `expected 44 tools, got ${names.length}: ${names.join(',')}`);
+  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types', 'get_project_requirement_activities']) {
     assert.ok(names.includes(required), `missing tool ${required}`);
   }
   // Consolidated away in v0.6.0 — must not resurface.
@@ -73,4 +73,7 @@ test('server boots on stdio and lists all tools', async () => {
   const resolver = tools.find((t) => t.name === 'get_company_id_from_object');
   assert.equal(resolver.annotations.readOnlyHint, true);
   assert.match(resolver.description, /call this tool first/i);
+  const activities = tools.find((t) => t.name === 'get_project_requirement_activities');
+  assert.match(activities.description, /first call get_project_requirements/i);
+  assert.deepEqual(activities.inputSchema.required, ['project_id', 'project_requirement_id']);
 });
