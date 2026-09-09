@@ -21,5 +21,6 @@ test('get_project_by_id requests rich project planning and relationship details'
   assert.match(request.query, /projectScopeUrls\s*{\s*id\s+url/);
   assert.match(request.query, /requirementsProgress\s*{\s*done\s+open\s+pending\s+total/);
   assert.match(request.query, /assets\s*{\s*id\s+name/);
+  assert.match(request.query, /assignedTeams\s*{\s*id\s+label/);
   assert.match(request.query, /playbooks\s*{\s*id\s+label\s+description/);
 });

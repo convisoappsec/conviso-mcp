@@ -211,6 +211,10 @@ const GraphQLFieldTemplates = {
             id
             name
         }
+        assignedTeams {
+            id
+            label
+        }
         playbooks {
             id
             label
