@@ -74,7 +74,7 @@ const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', '
 function buildServer() {
   const server = new McpServer({
     name: pkg.name || 'conviso-mcp',
-    version: pkg.version || '0.6.0',
+    version: pkg.version || '0.8.0',
   });
 
   // Registration helper: one place for the try/catch, error shape, and annotations.
@@ -244,7 +244,7 @@ function buildServer() {
 
   tool('get_project', {
     title: 'Project Details',
-    desc: 'Get a project by ID.',
+    desc: 'Get detailed project data by ID, including planning dates, estimated effort, goals and scope, analysts and allocated hours, assets, requirements progress, and project type.',
     schema: z.object({ project_id: z.number() }),
   }, ({ project_id }) => gql.get_project_by_id(project_id));
 

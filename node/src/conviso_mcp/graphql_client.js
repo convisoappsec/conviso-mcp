@@ -157,22 +157,73 @@ const GraphQLFieldTemplates = {
 
   project: `
         id
+        pid
         label
+        type
         status
+        isOpen
+        waiting
+        isPublic
         createdAt
+        updatedAt
         startDate
         endDate
-        allocatedAnalyst {
+        dueDate
+        plannedStartedAt
+        estimatedDays
+        estimatedHours
+        goal
+        objective
+        scope
+        comment
+        executiveSummary
+        mainRecommendations
+        environmentCompromised
+        environmentInvaded
+        assignedUsers {
+            id
+            allocatedHours
+            createdAt
+            updatedAt
             portalUser {
                 name
+                email
             }
         }
         projectType {
+            id
+            code
             label
+            description
+            defaultDuration
+        }
+        projectScopeUrls {
+            id
+            url
+        }
+        requirementsProgress {
+            done
+            open
+            pending
+            total
+        }
+        assets {
+            id
+            name
+        }
+        assignedTeams {
+            id
+            label
+        }
+        playbooks {
+            id
+            label
+            description
         }
 
         company {
             id
+            label
         }
 `
 };
@@ -413,7 +464,7 @@ const PROJECTS_QUERY = `
                 createdAt
                 startDate
                 endDate
-                allocatedAnalyst {
+                assignedUsers {
                     portalUser {
                         name
                     }
