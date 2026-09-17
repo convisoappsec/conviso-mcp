@@ -17,6 +17,7 @@
  *   8. Applications            create / update (read via get_applications/get_application)
  *   9. Scans                   read only  -> get_scan_histories (no mutation)
  *  10. Threat Modeling         create / update / version (read via get_threat_model_*)
+ *  11. AppSec Program          assessment copilot callbacks only (agent reports back)
  */
 export const ALLOWED_MUTATIONS = [
   // 1. Issues / Vulnerabilities (manual management only — scanner-ingestion mutations excluded)
@@ -71,4 +72,13 @@ export const ALLOWED_MUTATIONS = [
   'createThreatModelArtifactVersion',
   'updateThreatModelArtifact',
   'createThreatModelingRequirements',
+
+  // 11. AppSec Program — the assessment copilot's callbacks.
+  //
+  // Same shape as submitPentestRetestResult: the agent reports what it produced
+  // and nothing else. It cannot create a run, cannot read answers and cannot
+  // write one -- a proposal only reaches the assessment after a person accepts
+  // it in the UI, which is a separate mutation deliberately left out of here.
+  'submitProgramAssessmentSuggestions',
+  'failProgramAssessmentCopilotRun',
 ];
