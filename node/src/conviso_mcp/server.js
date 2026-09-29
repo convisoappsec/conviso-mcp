@@ -528,7 +528,7 @@ function buildServer() {
 
   tool('list_mutations', {
     title: 'List Mutations',
-    desc: 'Discover the permitted write operations (name, description, category, destructive flag). Step 1 of the write workflow: list_mutations -> describe_mutation -> execute_mutation. Optional: search (substring), category (issue, ticket, project, asset, requirement, pentest, application, threat_model), limit (default 50).',
+    desc: 'Discover the permitted write operations (name, description, category, destructive flag). Step 1 of the write workflow: list_mutations -> describe_mutation -> execute_mutation. Optional: search (substring), category (issue, ticket, project, asset, requirement, pentest, application, threat_model, program), limit (default 50).',
     schema: z.object({
       search: z.string().optional(),
       category: z.string().optional(),
@@ -610,7 +610,7 @@ function buildServer() {
 
   tool('create_project', {
     title: 'Create Project',
-    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, allocatedPortalUserEmails...).',
+    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, assigneeEmails...).',
     schema: z.object({
       company_id: z.number(),
       type_id: z.number(),
