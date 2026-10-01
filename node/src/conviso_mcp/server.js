@@ -578,7 +578,7 @@ function buildServer() {
 
   tool('create_source_code_vulnerability', {
     title: 'Create Source Code Vulnerability',
-    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. Required: company_id and asset_id; if only asset_id is known, call get_company_id_from_object first. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field.`,
+    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. Required: company_id and asset_id; if only asset_id is known, call get_company_id_from_object first. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field, including branchId, which the schema requires on create when the repository asset has branches.`,
     schema: z.object({
       company_id: z.number(),
       asset_id: z.number(),
