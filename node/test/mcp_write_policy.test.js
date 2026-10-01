@@ -88,10 +88,11 @@ test('company resolver follows each supported object relationship', async () => 
     if (/project\(id/.test(query)) return { project: { company: { id: '14' } } };
     if (/pentestExecution\(id/.test(query)) return { pentestExecution: { project: { company: { id: '15' } } } };
     if (/threatModelArtifact\(id/.test(query)) return { threatModelArtifact: { company: { id: '16' } } };
+    if (/programAssessmentCopilotRun\(id/.test(query)) return { programAssessmentCopilotRun: { company: { id: '17' } } };
     throw new Error('unexpected query');
   };
 
-  const cases = [['asset', 1, 11], ['issue', 2, 12], ['pentest_artifact', 3, 13], ['project', 4, 14], ['pentest_execution', 5, 15], ['threat_model_artifact', 6, 16]];
+  const cases = [['asset', 1, 11], ['issue', 2, 12], ['pentest_artifact', 3, 13], ['project', 4, 14], ['pentest_execution', 5, 15], ['threat_model_artifact', 6, 16], ['program_copilot_run', 7, 17]];
   for (const [object_type, object_id, company_id] of cases) {
     assert.deepEqual(await client.getCompanyIdFromObject(object_type, object_id), { object_type, object_id, company_id });
   }

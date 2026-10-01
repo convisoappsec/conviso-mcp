@@ -627,6 +627,13 @@ class GraphQLClient {
         query: 'threatModelArtifact(id: $id) { company { id } }',
         companyId: (data) => data?.threatModelArtifact?.company?.id,
       },
+      // The assessment copilot reports back holding a run id and nothing else.
+      // Without this the callbacks are unreachable for any caller that does not
+      // already know the company, which is a caller that did not need to ask.
+      program_copilot_run: {
+        query: 'programAssessmentCopilotRun(id: $id) { company { id } }',
+        companyId: (data) => data?.programAssessmentCopilotRun?.company?.id,
+      },
     };
     const lookup = lookups[objectType];
     if (!lookup) {
