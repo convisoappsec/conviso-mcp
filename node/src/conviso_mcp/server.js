@@ -64,7 +64,7 @@ function ok(data) {
 // Shared enum strings so tool descriptions state each list exactly once.
 const SEVERITIES = 'NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL';
 const ISSUE_STATUSES = 'CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED';
-const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', 'pentest_execution', 'threat_model_artifact'];
+const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', 'pentest_execution', 'threat_model_artifact', 'program_copilot_run'];
 
 /**
  * Build a fresh McpServer with all tools registered. stdio mode uses one instance for the
@@ -131,7 +131,7 @@ function buildServer() {
 
   tool('get_company_id_from_object', {
     title: 'Resolve Company from Object',
-    desc: `Resolve the company_id that owns an existing Conviso object. IMPORTANT: mutation tools require company_id for the MCP write-policy check. When the user asks for a write and provides only an object ID (for example issue_id, asset_id, project_id, pentest artifact/execution ID, or threat-model artifact ID), call this tool first with the matching object_type, then pass the returned company_id to the mutation tool. Do not guess a company_id and do not pass the object ID as company_id. Supported object_type values: ${COMPANY_OBJECT_TYPES.join(', ')}. This lookup is for write preparation; it does not perform a mutation.`,
+    desc: `Resolve the company_id that owns an existing Conviso object. IMPORTANT: mutation tools require company_id for the MCP write-policy check. When the user asks for a write and provides only an object ID (for example issue_id, asset_id, project_id, pentest artifact/execution ID, threat-model artifact ID, or an assessment copilot run_id), call this tool first with the matching object_type, then pass the returned company_id to the mutation tool. Do not guess a company_id and do not pass the object ID as company_id. Supported object_type values: ${COMPANY_OBJECT_TYPES.join(', ')}. This lookup is for write preparation; it does not perform a mutation.`,
     schema: z.object({
       object_type: z.enum(COMPANY_OBJECT_TYPES),
       object_id: z.number(),
@@ -528,7 +528,7 @@ function buildServer() {
 
   tool('list_mutations', {
     title: 'List Mutations',
-    desc: 'Discover the permitted write operations (name, description, category, destructive flag). Step 1 of the write workflow: list_mutations -> describe_mutation -> execute_mutation. Optional: search (substring), category (issue, ticket, project, asset, requirement, pentest, application, threat_model), limit (default 50).',
+    desc: 'Discover the permitted write operations (name, description, category, destructive flag). Step 1 of the write workflow: list_mutations -> describe_mutation -> execute_mutation. Optional: search (substring), category (issue, ticket, project, asset, requirement, pentest, application, threat_model, program), limit (default 50).',
     schema: z.object({
       search: z.string().optional(),
       category: z.string().optional(),
@@ -578,7 +578,7 @@ function buildServer() {
 
   tool('create_source_code_vulnerability', {
     title: 'Create Source Code Vulnerability',
-    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. Required: company_id and asset_id; if only asset_id is known, call get_company_id_from_object first. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field.`,
+    desc: `Create a manual source-code (SAST-style) vulnerability on an asset. Required: company_id and asset_id; if only asset_id is known, call get_company_id_from_object first. severity: ${SEVERITIES}. impact_level/probability_level: LOW, MEDIUM, HIGH (default MEDIUM). status defaults to DRAFT. extra = any other CreateSourceCodeVulnerabilityInput field, including branchId, which the schema requires on create when the repository asset has branches.`,
     schema: z.object({
       company_id: z.number(),
       asset_id: z.number(),
@@ -610,7 +610,7 @@ function buildServer() {
 
   tool('create_project', {
     title: 'Create Project',
-    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, allocatedPortalUserEmails...).',
+    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, assigneeEmails...).',
     schema: z.object({
       company_id: z.number(),
       type_id: z.number(),

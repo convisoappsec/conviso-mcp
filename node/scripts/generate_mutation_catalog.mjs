@@ -43,6 +43,9 @@ function categoryOf(name) {
   if (n.includes('ticket')) return 'ticket';
   if (n.includes('pentest')) return 'pentest';
   if (n.includes('threat')) return 'threat_model';
+  // Before 'requirement' and 'asset': an assessment mutation mentions neither,
+  // but "program" is the domain a reader filtering by category expects.
+  if (n.includes('program')) return 'program';
   if (n.includes('requirement')) return 'requirement';
   if (n.includes('application')) return 'application';
   if (n.includes('dast') || n.includes('asset')) return 'asset';
