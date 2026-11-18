@@ -76,4 +76,13 @@ test('server boots on stdio and lists all tools', async () => {
   const activities = tools.find((t) => t.name === 'get_project_requirement_activities');
   assert.match(activities.description, /first call get_project_requirements/i);
   assert.deepEqual(activities.inputSchema.required, ['project_id', 'project_requirement_id']);
+  const portalUsers = tools.find((t) => t.name === 'get_portal_users');
+  assert.equal(portalUsers.annotations.readOnlyHint, true);
+  assert.deepEqual(portalUsers.inputSchema.required, ['company_id']);
+  for (const opt of ['page', 'limit', 'search', 'active_only']) {
+    assert.ok(portalUsers.inputSchema.properties[opt], `get_portal_users missing ${opt}`);
+  }
+  const portalUser = tools.find((t) => t.name === 'get_portal_user');
+  assert.equal(portalUser.annotations.readOnlyHint, true);
+  assert.deepEqual(portalUser.inputSchema.required, ['company_id', 'user_id']);
 });
