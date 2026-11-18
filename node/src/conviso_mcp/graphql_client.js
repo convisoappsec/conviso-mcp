@@ -1112,6 +1112,36 @@ class GraphQLClient {
     return this.execute(query, { companyId: company_id, pagination: { page, perPage: limit }, search, assigneeEmail, hasVersion });
   }
 
+  async get_portal_users(company_id, { page = 1, limit = 25, search, activeOnly } = {}) {
+    const query = `
+      query GetPortalUsers($companyId: ID!, $page: Int!, $limit: Int!, $params: PortalUserSearch) {
+        portalUserByCompany(companyId: $companyId, page: $page, limit: $limit, params: $params) {
+          collection {
+            id name email blocked inactive sso twoFactor kind createdAt updatedAt
+            profile(companyId: $companyId) { name }
+            teams(companyId: $companyId) { id label }
+          }
+          metadata { totalCount totalPages currentPage limitValue }
+        }
+      }`;
+    const params = F.prune({ search, activeOnly });
+    return this.execute(query, { companyId: company_id, page, limit, params: Object.keys(params).length ? params : {} });
+  }
+
+  async get_portal_user(company_id, user_id) {
+    const query = `
+      query GetPortalUser($portalUserId: ID!, $companyId: Int!) {
+        portalUserAccess(portalUserId: $portalUserId, companyId: $companyId) {
+          portalUser {
+            id name email blocked inactive sso twoFactor kind createdAt updatedAt
+          }
+          accessProfile { id name }
+          teams { id label }
+        }
+      }`;
+    return this.execute(query, { portalUserId: user_id, companyId: company_id });
+  }
+
   async get_threat_model_artifact(artifact_id) {
     const query = `
       query GetThreatModelArtifact($id: ID!) {

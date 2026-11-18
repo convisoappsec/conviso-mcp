@@ -74,7 +74,7 @@ const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', '
 function buildServer() {
   const server = new McpServer({
     name: pkg.name || 'conviso-mcp',
-    version: pkg.version || '0.8.0',
+    version: pkg.version || '0.9.0',
   });
 
   // Registration helper: one place for the try/catch, error shape, and annotations.
@@ -440,6 +440,28 @@ function buildServer() {
     desc: 'Get an application by ID, including its linked assets.',
     schema: z.object({ company_id: z.number(), application_id: z.number() }),
   }, ({ company_id, application_id }) => gql.get_application(company_id, application_id));
+
+  tool('get_portal_users', {
+    title: 'List Portal Users',
+    desc: 'List a company\'s portal users (paginated, default 25/page). Returns id, name, email, access profile, teams, blocked/inactive/sso/2fa status, kind, and timestamps. Optional: search (name/email substring), active_only (exclude blocked/inactive users).',
+    schema: z.object({
+      company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      active_only: z.boolean().optional(),
+    }),
+  }, ({ company_id, page = 1, limit = 25, search, active_only }) =>
+    gql.get_portal_users(company_id, { page, limit, search, activeOnly: active_only }));
+
+  tool('get_portal_user', {
+    title: 'Portal User Details',
+    desc: 'Get a single portal user by ID, including their access profile and teams within a company.',
+    schema: z.object({
+      company_id: z.number(),
+      user_id: z.number(),
+    }),
+  }, ({ company_id, user_id }) => gql.get_portal_user(company_id, user_id));
 
   tool('get_scan_histories', {
     title: 'List Scan Histories',
