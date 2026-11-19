@@ -441,9 +441,12 @@ function buildServer() {
     schema: z.object({ company_id: z.number(), application_id: z.number() }),
   }, ({ company_id, application_id }) => gql.get_application(company_id, application_id));
 
-  tool('get_portal_users', {
-    title: 'List Portal Users',
-    desc: 'List a company\'s portal users (paginated, default 25/page). Returns id, name, email, access profile, teams, blocked/inactive/sso/2fa status, kind, and timestamps. Optional: search (name/email substring), active_only (exclude blocked/inactive users).',
+  tool('get_users', {
+    title: 'List Users',
+    desc: 'List the users who have access to a company (paginated, default 25/page). Returns id, name, email, direct access profile, teams (with the profiles each team grants), blocked/inactive status, kind, and timestamps. '
+      + 'A null direct profile does not mean "no access": the user may get access only through a team profile. '
+      + 'Requires permission to view users in the company; without it the Platform returns only the API key\'s own user, and the result carries a `warning` field. '
+      + 'Optional: search (name/email substring), active_only (exclude blocked/inactive users).',
     schema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
@@ -452,16 +455,7 @@ function buildServer() {
       active_only: z.boolean().optional(),
     }),
   }, ({ company_id, page = 1, limit = 25, search, active_only }) =>
-    gql.get_portal_users(company_id, { page, limit, search, activeOnly: active_only }));
-
-  tool('get_portal_user', {
-    title: 'Portal User Details',
-    desc: 'Get a single portal user by ID, including their access profile and teams within a company.',
-    schema: z.object({
-      company_id: z.number(),
-      user_id: z.number(),
-    }),
-  }, ({ company_id, user_id }) => gql.get_portal_user(company_id, user_id));
+    gql.get_users(company_id, { page, limit, search, activeOnly: active_only }));
 
   tool('get_scan_histories', {
     title: 'List Scan Histories',

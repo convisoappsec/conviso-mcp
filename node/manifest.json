@@ -128,12 +128,8 @@
       "description": "Get a single application by id, including its linked assets."
     },
     {
-      "name": "get_portal_users",
-      "description": "List a company's portal users (paginated). Returns id, name, email, access profile, teams, blocked/inactive/sso/2fa status, kind, and timestamps. Optional: search (name/email substring), active_only."
-    },
-    {
-      "name": "get_portal_user",
-      "description": "Get a single portal user by ID, including their access profile and teams within a company."
+      "name": "get_users",
+      "description": "List the users who have access to a company (paginated). Returns id, name, email, direct access profile, teams (with team profiles), blocked/inactive status, kind, and timestamps. Requires permission to view users in the company. Optional: search (name/email substring), active_only."
     },
     {
       "name": "get_scan_histories",
