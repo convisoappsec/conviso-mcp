@@ -74,7 +74,7 @@ const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', '
 function buildServer() {
   const server = new McpServer({
     name: pkg.name || 'conviso-mcp',
-    version: pkg.version || '0.8.0',
+    version: pkg.version || '0.9.0',
   });
 
   // Registration helper: one place for the try/catch, error shape, and annotations.
@@ -440,6 +440,22 @@ function buildServer() {
     desc: 'Get an application by ID, including its linked assets.',
     schema: z.object({ company_id: z.number(), application_id: z.number() }),
   }, ({ company_id, application_id }) => gql.get_application(company_id, application_id));
+
+  tool('get_users', {
+    title: 'List Users',
+    desc: 'List the users who have access to a company (paginated, default 25/page). Returns id, name, email, direct access profile, teams (with the profiles each team grants), blocked/inactive status, kind, and timestamps. '
+      + 'A null direct profile does not mean "no access": the user may get access only through a team profile. '
+      + 'Requires permission to view users in the company; without it the Platform returns only the API key\'s own user, and the result carries a `warning` field. '
+      + 'Optional: search (name/email substring), active_only (exclude blocked/inactive users).',
+    schema: z.object({
+      company_id: z.number(),
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      search: z.string().optional(),
+      active_only: z.boolean().optional(),
+    }),
+  }, ({ company_id, page = 1, limit = 25, search, active_only }) =>
+    gql.get_users(company_id, { page, limit, search, activeOnly: active_only }));
 
   tool('get_scan_histories', {
     title: 'List Scan Histories',

@@ -23,6 +23,7 @@ The server exposes the following tools to the LLM:
 | **Utilities** | `create_project_url` | Generates a direct link to the specific project on the Conviso Platform. |
 | **Metrics** | `get_mttr_over_time` | Get Mean Time To Resolution (MTTR) metrics over time for a company. Returns resolution times by severity level. |
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
+| **Users** | `get_users` | List the users who have access to a company, including direct access profile and teams (with team profiles). Requires permission to view users in the company. |
 | **Tickets**  | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
 | **Requirements**  | `get_requirements` / `get_requirement` / `get_project_requirements` / `get_project_requirement_activities` | Browse requirements/checklists and the instantiated activities of a requirement within a project. When only the project is known, use `get_project_requirements` first to discover the required `project_requirement_id`. |
 | **Applications** | `get_applications` / `get_application` | List or fetch applications and their assets. |
