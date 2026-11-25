@@ -443,9 +443,9 @@ function buildServer() {
 
   tool('get_users', {
     title: 'List Users',
-    desc: 'List the users who have access to a company (paginated, default 25/page). Returns id, name, email, direct access profile, teams (with the profiles each team grants), blocked/inactive status, kind, and timestamps. '
+    desc: 'List the users who have access to a company (paginated, default 25/page, max 100/page). Returns id, name, email, direct access profile, teams (with the profiles each team grants), blocked/inactive status, kind, and timestamps. '
       + 'A null direct profile does not mean "no access": the user may get access only through a team profile. '
-      + 'Requires permission to view users in the company; without it the Platform returns only the API key\'s own user, and the result carries a `warning` field. '
+      + 'Requires permission to view users in the company. Without it the Platform returns no users or only the API key\'s own user (also for searches), and the result carries a `warning` field: do not report that as the company\'s user list. '
       + 'Optional: search (name/email substring), active_only (exclude blocked/inactive users).',
     schema: z.object({
       company_id: z.number(),

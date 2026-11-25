@@ -550,21 +550,27 @@ const MCP_WRITE_POLICY_QUERY = `
 
 /**
  * Without permission to view users in a company, the Platform does not error on
- * portalUserByCompany: it silently scopes the list down to the caller (HTTP 200, totalCount 1).
- * Flag that case so the model doesn't report it as "this company has one user".
+ * portalUserByCompany: it silently scopes the list down to the caller (HTTP 200).
+ * Filters run after that scoping, and company service keys never see themselves,
+ * so the filtered page may come back as [caller] or as []. The decision is therefore
+ * based on `visibility`, an unfiltered probe of the same scope sent in the same request:
+ * if it holds no users or only the caller, the key can't list this company's users.
+ * The probe itself is removed from the result to keep it out of the model's context.
  */
-export function withSelfScopeWarning(data) {
-  const callerId = data?.currentUserProfile?.id;
-  const list = data?.portalUserByCompany;
-  const only = list?.collection;
-  if (callerId == null || list?.metadata?.totalCount !== 1 || only?.length !== 1 || String(only[0].id) !== String(callerId)) {
-    return data;
-  }
+export function withScopeWarning(data) {
+  const visible = data?.visibility;
+  if (!visible) return data;
+  const { visibility, ...rest } = data;
+  const callerId = data.currentUserProfile?.id;
+  const total = visible.metadata?.totalCount;
+  const onlyCaller = total === 1 && callerId != null
+    && String(visible.collection?.[0]?.id) === String(callerId);
+  if (total !== 0 && !onlyCaller) return rest;
   return {
-    ...data,
-    warning: "Only the API key's own user was returned. Unless a filter (search/active_only) "
-      + 'matches just that user, the key probably lacks permission to view users in this company, '
-      + "so this is not the company's user list.",
+    ...rest,
+    warning: "Without filters, the Platform returned no users or only the API key's own user for this company. "
+      + 'The key probably lacks permission to view users here, so this result (including an empty search) '
+      + "is not the company's user list.",
   };
 }
 
@@ -1136,6 +1142,10 @@ class GraphQLClient {
     const query = `
       query GetUsers($companyId: ID!, $page: Int!, $limit: Int!, $params: PortalUserSearch) {
         currentUserProfile { id }
+        visibility: portalUserByCompany(companyId: $companyId, page: 1, limit: 2, params: {}) {
+          collection { id }
+          metadata { totalCount }
+        }
         portalUserByCompany(companyId: $companyId, page: $page, limit: $limit, params: $params) {
           collection {
             id name email blocked inactive kind createdAt updatedAt
@@ -1145,9 +1155,11 @@ class GraphQLClient {
           metadata { totalCount totalPages currentPage limitValue }
         }
       }`;
+    // `params` must always be sent (even as {}), here and on the `visibility` alias:
+    // Resolvers::PortalUserByCompany#resolve has no default for it and raises ArgumentError otherwise.
     const params = F.prune({ search, activeOnly });
     const data = await this.execute(query, { companyId: company_id, page, limit, params });
-    return withSelfScopeWarning(data);
+    return withScopeWarning(data);
   }
 
   async get_threat_model_artifact(artifact_id) {
