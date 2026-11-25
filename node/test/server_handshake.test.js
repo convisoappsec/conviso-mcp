@@ -53,8 +53,8 @@ test('server boots on stdio and lists all tools', async () => {
   const tools = await handshake();
   const names = tools.map((t) => t.name);
 
-  assert.equal(names.length, 52, `expected 52 tools, got ${names.length}: ${names.join(',')}`);
-  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types', 'get_project_requirement_activities', 'get_activity_attachments', 'read_activity_attachment', 'get_object_timeline', 'get_custom_dashboard_catalog', 'get_custom_dashboards', 'get_custom_dashboard', 'create_custom_dashboard', 'update_custom_dashboard']) {
+  assert.equal(names.length, 53, `expected 53 tools, got ${names.length}: ${names.join(',')}`);
+  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types', 'get_project_requirement_activities', 'get_activity_attachments', 'read_activity_attachment', 'get_object_timeline', 'get_custom_dashboard_catalog', 'get_custom_dashboards', 'get_custom_dashboard', 'create_custom_dashboard', 'update_custom_dashboard', 'get_users']) {
     assert.ok(names.includes(required), `missing tool ${required}`);
   }
   // Consolidated away in v0.6.0 — must not resurface.
@@ -113,4 +113,14 @@ test('server boots on stdio and lists all tools', async () => {
   const update = tools.find((t) => t.name === 'update_custom_dashboard');
   assert.equal(update.annotations.destructiveHint, true);
   assert.deepEqual(update.inputSchema.required, ['company_id', 'dashboard_id', 'expected_version']);
+
+  const users = tools.find((t) => t.name === 'get_users');
+  assert.equal(users.annotations.readOnlyHint, true);
+  assert.deepEqual(users.inputSchema.required, ['company_id']);
+  for (const opt of ['page', 'limit', 'search', 'active_only']) {
+    assert.ok(users.inputSchema.properties[opt], `get_users missing ${opt}`);
+  }
+  assert.match(users.description, /requires permission to view users/i);
+  // Backend model name must not leak into the tool vocabulary.
+  assert.ok(!names.some((n) => /portal/.test(n)), 'no tool should be named after PortalUser');
 });
