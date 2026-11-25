@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { GraphQLClient } from './graphql_client.js';
 import { listMutations, describeMutation } from './mutations.js';
 import { TIMELINE_OBJECT_TYPES } from './timeline.js';
+import { OWNERSHIP_FILTERS, VISUALIZATION_KINDS, WIDGET_SIZES } from './custom_dashboards.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 console.error('[+] Starting Conviso MCP Server (MCP SDK)');
@@ -48,6 +49,12 @@ function sanitizeError(err, message = 'Request failed') {
   if (err?.authHint) {
     result.hint = err.authHint;
   }
+  // Structured details our own code marked as safe (e.g. dashboard validation errors).
+  if (err?.publicData && typeof err.publicData === 'object') {
+    for (const [key, value] of Object.entries(err.publicData)) {
+      if (!(key in result)) result[key] = value;
+    }
+  }
   return result;
 }
 
@@ -67,6 +74,42 @@ const SEVERITIES = 'NOTIFICATION, LOW, MEDIUM, HIGH, CRITICAL';
 const ISSUE_STATUSES = 'CREATED, DRAFT, IDENTIFIED, IN_PROGRESS, AWAITING_VALIDATION, FIX_ACCEPTED, RISK_ACCEPTED, FALSE_POSITIVE, SUPPRESSED';
 const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', 'pentest_execution', 'threat_model_artifact'];
 
+// Metrics Studio widget, in the definition's own (camelCase) vocabulary. Loose so canonical
+// widgets returned by get_custom_dashboard (key, query, layout) pass through unchanged.
+const DASHBOARD_WIDGET = z.looseObject({
+  title: z.string().min(1).max(120),
+  metric: z.union([z.string(), z.object({ key: z.string(), version: z.number().int().optional() })])
+    .describe('Metric id from get_custom_dashboard_catalog, e.g. "issues.count" or "issues.count@1".'),
+  visualization: z.union([z.enum(VISUALIZATION_KINDS), z.object({ kind: z.enum(VISUALIZATION_KINDS) })]),
+  groupBy: z.array(z.union([z.string(), z.record(z.string(), z.any())])).max(2).optional()
+    .describe('0-2 dimension keys, in an order listed in the metric groupings. {dimension, values} keeps only those values.'),
+  filters: z.record(z.string(), z.any()).optional()
+    .describe('Keys from the metric filters, e.g. {statuses:["IDENTIFIED"], severities:["CRITICAL","HIGH"], slaStates:["BREACHED"]}.'),
+  filterMode: z.enum(['INHERIT', 'OVERRIDE']).optional(),
+  parameters: z.record(z.string(), z.any()).optional().describe('Metric parameters, e.g. {bucket:"MONTH"}.'),
+  limit: z.number().int().min(1).max(50).optional().describe('Top N groups.'),
+  orderBy: z.union([z.enum(['ASC', 'DESC']), z.record(z.string(), z.any())]).optional(),
+  timeRange: z.record(z.string(), z.any()).optional()
+    .describe('Own period for a time-based metric: {mode:"LAST_COMPLETE_DAYS", days:90} or {mode:"ABSOLUTE", startDate, endDate}.'),
+  recordList: z.record(z.string(), z.any()).optional()
+    .describe('RECORD_LIST only: {columns, sort:{column,direction}, pageSize}.'),
+  size: z.enum(Object.keys(WIDGET_SIZES)).optional(),
+  key: z.string().optional().describe('Keep the key of an existing widget when updating.'),
+  enabled: z.boolean().optional(),
+});
+
+const DASHBOARD_FIELDS = {
+  description: z.string().max(1000).optional(),
+  timezone: z.string().optional().describe('IANA time zone, e.g. America/Sao_Paulo. Default UTC.'),
+  period_days: z.number().int().min(1).max(366).optional()
+    .describe('Default period: the last N complete days (default 30).'),
+  default_time_range: z.record(z.string(), z.any()).optional()
+    .describe('Instead of period_days: {mode:"LAST_DAYS_INCLUDING_TODAY", days} or {mode:"ABSOLUTE", startDate, endDate}.'),
+  default_filters: z.record(z.string(), z.any()).optional()
+    .describe('Dashboard-wide filters: {assetIds, assetTags:{mode:"ANY"|"ALL", names}, archived:"ACTIVE"|"ARCHIVED"|"ALL"}. Default {archived:"ACTIVE"}.'),
+  dry_run: z.boolean().optional().describe('Validate and compute every widget without saving.'),
+};
+
 /**
  * Build a fresh McpServer with all tools registered. stdio mode uses one instance for the
  * whole session; HTTP mode builds one per request (the SDK's stateless pattern — reusing a
@@ -75,7 +118,7 @@ const COMPANY_OBJECT_TYPES = ['issue', 'asset', 'project', 'pentest_artifact', '
 function buildServer() {
   const server = new McpServer({
     name: pkg.name || 'conviso-mcp',
-    version: pkg.version || '0.9.0',
+    version: pkg.version || '0.10.0',
   });
 
   // Registration helper: one place for the try/catch, error shape, and annotations.
@@ -738,6 +781,63 @@ function buildServer() {
     }),
     write: true,
   }, (a) => gql.create_pentest_artifact(a));
+
+  /**
+   * METRICS STUDIO — custom dashboards (logic in custom_dashboards.js)
+   */
+
+  tool('get_custom_dashboard_catalog', {
+    title: 'Metrics Studio Catalog',
+    desc: 'Metrics Studio catalog for a company: every metric a custom dashboard widget can show (metric id key@version, what it measures, time_basis, accepted filters, allowed groupBy lists, visualization kinds per number of groupBy dimensions, parameters, max_limit, record_list_columns), the dimensions to group by (with their values), vocabularies (statuses, severities, issue types, asset types), limits and widget sizes. Call it before create_custom_dashboard or update_custom_dashboard and combine only what it allows.',
+    schema: z.object({ company_id: z.number() }),
+  }, (a) => gql.get_custom_dashboard_catalog(a));
+
+  tool('get_custom_dashboards', {
+    title: 'List Custom Dashboards',
+    desc: `List the Metrics Studio custom dashboards of a company that the API key user can open: id, name, widget_count, lock_version, access_role, can_edit, url. ownership: ${OWNERSHIP_FILTERS.join(', ')} (default OWNED). Optional: search (name), page, limit (default 25).`,
+    schema: z.object({
+      company_id: z.number(),
+      search: z.string().optional(),
+      ownership: z.enum(OWNERSHIP_FILTERS).optional(),
+      page: z.number().int().min(1).optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+    }),
+  }, (a) => gql.get_custom_dashboards(a));
+
+  tool('get_custom_dashboard', {
+    title: 'Custom Dashboard Details',
+    desc: 'Get one Metrics Studio custom dashboard with lock_version and its full definition (name, timezone, defaultTimeRange, defaultFilters and widgets with key, title, metric, query, visualization, layout). To change it, edit the widgets and send them to update_custom_dashboard with expected_version = lock_version.',
+    schema: z.object({ company_id: z.number(), dashboard_id: z.union([z.number(), z.string()]) }),
+  }, (a) => gql.get_custom_dashboard(a));
+
+  tool('create_custom_dashboard', {
+    title: 'Create Custom Dashboard',
+    desc: 'Create a Metrics Studio custom dashboard from what the customer wants to see. Workflow: (1) get_custom_dashboard_catalog(company_id); (2) turn each thing the customer asked for into one widget, using only the metrics, filters, groupBy lists and visualization kinds the catalog allows for that metric; (3) call with dry_run=true to validate and compute every widget without saving, and check that each one answers the request; (4) call again without dry_run to save. Widget: title, metric, visualization, and optionally groupBy, filters, filterMode, parameters, limit, orderBy, timeRange, recordList, size (SMALL 3x2, MEDIUM 4x3, HALF 6x4, WIDE 8x4, FULL 12x4 on a 12-column grid; default SMALL for NUMBER, FULL for RECORD_LIST, HALF otherwise). Widgets are placed left to right in the order given, so put the headline numbers first; keys, time basis and layout are filled in. Max 12 widgets. A validation error returns validation_errors located per widget (JSON path, code, message): fix those widgets and retry. The dashboard is private to the API key user. Returns id, lock_version and url.',
+    schema: z.object({
+      company_id: z.number(),
+      name: z.string().min(1).max(120),
+      ...DASHBOARD_FIELDS,
+      widgets: z.array(DASHBOARD_WIDGET).min(1),
+    }),
+    write: true,
+    policy: ({ dry_run }) => !dry_run,
+  }, (a) => gql.create_custom_dashboard(a));
+
+  tool('update_custom_dashboard', {
+    title: 'Update Custom Dashboard',
+    desc: 'Change a Metrics Studio custom dashboard. Required: company_id, dashboard_id and expected_version (the lock_version from get_custom_dashboard or create_custom_dashboard; a stale value is rejected so edits made in the platform are never overwritten). Fields left out keep their value. widgets, when passed, replaces the whole widget list: read the dashboard first, edit its widgets (keep each key) and send all of them, in the order they should appear. Widgets take the same shape as in create_custom_dashboard, and the canonical widgets from get_custom_dashboard are accepted as they are. dry_run=true validates and computes without saving. Requires edit access to the dashboard.',
+    schema: z.object({
+      company_id: z.number(),
+      dashboard_id: z.union([z.number(), z.string()]),
+      expected_version: z.number().int(),
+      name: z.string().min(1).max(120).optional(),
+      ...DASHBOARD_FIELDS,
+      widgets: z.array(DASHBOARD_WIDGET).min(1).optional(),
+    }),
+    write: true,
+    destructive: true,
+    policy: ({ dry_run }) => !dry_run,
+  }, (a) => gql.update_custom_dashboard(a));
 
   return server;
 }

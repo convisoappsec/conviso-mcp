@@ -17,6 +17,7 @@
  *   8. Applications            create / update (read via get_applications/get_application)
  *   9. Scans                   read only  -> get_scan_histories (no mutation)
  *  10. Threat Modeling         create / update / version (read via get_threat_model_*)
+ *  11. Metrics Studio          create / update custom dashboards -> DEDICATED_MUTATIONS below
  */
 export const ALLOWED_MUTATIONS = [
   // 1. Issues / Vulnerabilities (manual management only — scanner-ingestion mutations excluded)
@@ -71,4 +72,18 @@ export const ALLOWED_MUTATIONS = [
   'createThreatModelArtifactVersion',
   'updateThreatModelArtifact',
   'createThreatModelingRequirements',
+];
+
+/**
+ * Mutations reachable only through their dedicated tools, never through execute_mutation:
+ * their input is a whole JSON document (a custom dashboard DefinitionV1) that the tool
+ * assembles from the platform catalog, so a generic input engine adds nothing but risk.
+ * They are deliberately absent from mutations_catalog.json.
+ *
+ *   createCustomDashboard  -> create_custom_dashboard  (custom_dashboards.js)
+ *   updateCustomDashboard  -> update_custom_dashboard  (custom_dashboards.js)
+ */
+export const DEDICATED_MUTATIONS = [
+  'createCustomDashboard',
+  'updateCustomDashboard',
 ];

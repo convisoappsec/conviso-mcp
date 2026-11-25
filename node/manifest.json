@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.9.0",
-  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements and activity evidence files, applications, scans, supply chain, AI-pentest, threat modeling, object timelines) from MCP clients.",
-  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, the evidence files attached to requirement activities (PDF text, images, text files) and the change timeline of projects, activities, issues, assets, tickets, threat models and pentests, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
+  "version": "0.10.0",
+  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements and activity evidence files, applications, scans, supply chain, AI-pentest, threat modeling, object timelines, Metrics Studio dashboards) from MCP clients.",
+  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, the evidence files attached to requirement activities (PDF text, images, text files) and the change timeline of projects, activities, issues, assets, tickets, threat models and pentests, plus write tools: a generic allowlisted mutation engine (list/describe/execute), curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest) and Metrics Studio tools that build custom dashboards from a description of what to show (catalog, list, read, create and update, with a dry run that computes every widget before saving).",
   "author": {
     "name": "Conviso",
     "url": "https://github.com/convisoappsec"
@@ -218,6 +218,26 @@
     {
       "name": "create_pentest_artifact",
       "description": "Curated shortcut: create an AI-Pentest artifact (the scope/config a pentest runs against)."
+    },
+    {
+      "name": "get_custom_dashboard_catalog",
+      "description": "Metrics Studio catalog: every metric a custom dashboard widget can show, with the filters, groupings and visualizations it accepts, plus dimensions, vocabularies and limits."
+    },
+    {
+      "name": "get_custom_dashboards",
+      "description": "List the Metrics Studio custom dashboards of a company that the API key user can open (id, name, widgets, lock_version, link)."
+    },
+    {
+      "name": "get_custom_dashboard",
+      "description": "Get one Metrics Studio custom dashboard with its full definition and lock_version."
+    },
+    {
+      "name": "create_custom_dashboard",
+      "description": "Create a Metrics Studio custom dashboard from widgets described in the catalog vocabulary; dry_run validates and computes every widget without saving."
+    },
+    {
+      "name": "update_custom_dashboard",
+      "description": "Change a Metrics Studio custom dashboard (name, period, filters or the whole widget list), guarded by its lock_version."
     }
   ],
   "tools_generated": false,

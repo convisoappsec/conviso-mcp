@@ -53,8 +53,8 @@ test('server boots on stdio and lists all tools', async () => {
   const tools = await handshake();
   const names = tools.map((t) => t.name);
 
-  assert.equal(names.length, 47, `expected 47 tools, got ${names.length}: ${names.join(',')}`);
-  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types', 'get_project_requirement_activities', 'get_activity_attachments', 'read_activity_attachment', 'get_object_timeline']) {
+  assert.equal(names.length, 52, `expected 52 tools, got ${names.length}: ${names.join(',')}`);
+  for (const required of ['get_companies', 'get_company_id_from_object', 'get_issues', 'list_mutations', 'describe_mutation', 'execute_mutation', 'run_dast', 'get_tickets', 'get_project_types', 'get_project_requirement_activities', 'get_activity_attachments', 'read_activity_attachment', 'get_object_timeline', 'get_custom_dashboard_catalog', 'get_custom_dashboards', 'get_custom_dashboard', 'create_custom_dashboard', 'update_custom_dashboard']) {
     assert.ok(names.includes(required), `missing tool ${required}`);
   }
   // Consolidated away in v0.6.0 — must not resurface.
@@ -97,4 +97,20 @@ test('server boots on stdio and lists all tools', async () => {
   const timeline = tools.find((t) => t.name === 'get_object_timeline');
   assert.deepEqual(timeline.inputSchema.properties.object_type.enum,
     ['project', 'activity', 'issue', 'asset', 'ticket', 'threat_model_artifact', 'pentest_artifact']);
+
+  // Metrics Studio: reads are read-only; create/update are writes, update can drop widgets.
+  for (const name of ['get_custom_dashboard_catalog', 'get_custom_dashboards', 'get_custom_dashboard']) {
+    const t = tools.find((x) => x.name === name);
+    assert.equal(t.annotations.readOnlyHint, true, `${name} must be read-only`);
+    assert.ok(t.inputSchema.required.includes('company_id'), `${name} requires company_id`);
+  }
+  const create = tools.find((t) => t.name === 'create_custom_dashboard');
+  assert.equal(create.annotations.readOnlyHint, false);
+  assert.equal(create.annotations.destructiveHint, false);
+  assert.deepEqual(create.inputSchema.required, ['company_id', 'name', 'widgets']);
+  assert.match(create.description, /get_custom_dashboard_catalog/);
+  assert.match(create.description, /dry_run/);
+  const update = tools.find((t) => t.name === 'update_custom_dashboard');
+  assert.equal(update.annotations.destructiveHint, true);
+  assert.deepEqual(update.inputSchema.required, ['company_id', 'dashboard_id', 'expected_version']);
 });
