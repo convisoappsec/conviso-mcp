@@ -227,6 +227,25 @@ test('readable_as is predicted from metadata, using the extension when the type 
 
 const FILE = { id: '1', filename: 'f', content_type: null, uploaded_at: null, uploaded_by: null, history_entry: null };
 
+test('a listed string ID and MIME type round-trip for extensionless text evidence', async () => {
+  const evidence = { id: '9007199254740993', filename: 'evidence', contentType: 'text/plain' };
+  const execute = async (query, variables) => {
+    if (query === ACTIVITY_FILE_URL_QUERY) {
+      assert.equal(variables.id, evidence.id);
+      return { downloadActivityFile: { presignedUrl: 'https://example.com/evidence' } };
+    }
+    return activityPayload({ evidences: [evidence] });
+  };
+  const listing = await listActivityAttachments(execute, 1, 77);
+  const [file] = listing.attachments;
+  assert.equal(file.readable_as, 'text');
+  const result = await readActivityAttachment(execute, { project_id: 1, activity_id: 77, attachment_id: file.id }, {
+    fetchBytes: async () => Buffer.from('Written verification'),
+  });
+  assert.equal(JSON.parse(result.content[0].text).attachment.detected_type, 'text/plain');
+  assert.deepEqual(result.content[1], { type: 'text', text: 'Written verification' });
+});
+
 test('text files come back as text, capped by max_chars', async () => {
   const result = await buildReadResult({
     projectId: 1, activityId: 2, file: { ...FILE, filename: 'notes.txt', content_type: 'text/plain' },
@@ -284,6 +303,30 @@ test('PDF text is truncated at max_chars with a next_page to continue from', asy
   assert.equal(out.page_to, 1);
   assert.equal(out.next_page, 2);
   assert.ok(out.text.length <= 1000);
+});
+
+test('continuing a PDF within a page reproduces the full selected text exactly', async () => {
+  const lines = Array.from({ length: 42 }, (_, i) => `Evidence line ${i} ${'a'.repeat(42)}`);
+  const buf = buildPdf([null, lines, lines, 'outside selected range']);
+  const expected = await extractPdfText(buf, { pageTo: 3 });
+  let text = '';
+  let page = 1;
+  let offset = 0;
+  for (let i = 0; i < 20; i += 1) {
+    const result = await buildReadResult({
+      projectId: 1, activityId: 2, file: FILE, buf,
+      options: { page_from: page, page_to: 3, page_offset: offset, max_chars: 1000 },
+    });
+    const { pdf, note } = JSON.parse(result.content[0].text);
+    const chunk = result.content[1].text;
+    assert.ok(chunk.length > 0 && chunk.length <= 1000);
+    text += chunk;
+    if (!pdf.truncated) break;
+    assert.match(note, /page_offset=/);
+    page = pdf.next_page;
+    offset = pdf.next_page_offset;
+  }
+  assert.equal(text, expected.text);
 });
 
 test('scanned PDFs (no text layer) say so and point to include_original', async () => {

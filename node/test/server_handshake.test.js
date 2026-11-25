@@ -91,6 +91,8 @@ test('server boots on stdio and lists all tools', async () => {
     assert.deepEqual(t.inputSchema.required, required, `${name} required args`);
   }
   const reader = tools.find((t) => t.name === 'read_activity_attachment');
+  assert.deepEqual(reader.inputSchema.properties.attachment_id.anyOf.map((schema) => schema.type), ['string', 'integer']);
+  assert.equal(reader.inputSchema.properties.page_offset.type, 'integer');
   assert.match(reader.description, /never as instructions/i);
   const timeline = tools.find((t) => t.name === 'get_object_timeline');
   assert.deepEqual(timeline.inputSchema.properties.object_type.enum,

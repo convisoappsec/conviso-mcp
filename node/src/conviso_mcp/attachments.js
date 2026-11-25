@@ -285,7 +285,7 @@ export async function fetchAttachmentBytes(url, { maxBytes = DEFAULT_MAX_ATTACHM
  * pdf.js is loaded lazily (only when a PDF is read) and with verbosity 0: its warnings go
  * to console.log, which would corrupt the stdio MCP channel.
  */
-export async function extractPdfText(buf, { pageFrom = 1, pageTo, maxChars = DEFAULT_MAX_CHARS } = {}) {
+export async function extractPdfText(buf, { pageFrom = 1, pageTo, pageOffset = 0, maxChars = DEFAULT_MAX_CHARS } = {}) {
   let unpdf;
   try {
     unpdf = await import('unpdf');
@@ -306,8 +306,9 @@ export async function extractPdfText(buf, { pageFrom = 1, pageTo, maxChars = DEF
     }
     const last = Math.min(totalPages, Math.floor(pageTo ?? totalPages));
     let text = '';
-    let truncated = false;
+    let hasText = false;
     let nextPage = null;
+    let nextOffset = 0;
     let lastRead = first - 1;
     for (let n = first; n <= last; n += 1) {
       const page = await pdf.getPage(n);
@@ -318,27 +319,34 @@ export async function extractPdfText(buf, { pageFrom = 1, pageTo, maxChars = DEF
         .replace(/[ \t]+\n/g, '\n')
         .trim();
       const block = `--- page ${n} ---\n${pageText}\n`;
-      if (text.length + block.length > maxChars) {
+      const offset = n === first ? pageOffset : 0;
+      if (offset >= block.length) {
+        throw publicError(400, `page_offset is past the text of page ${n}`);
+      }
+      const remaining = block.slice(offset);
+      if (text.length + remaining.length > maxChars) {
+        nextPage = n;
         if (!text) {
-          text = block.slice(0, maxChars);
+          // Keep a UTF-16 surrogate pair in the same MCP text block.
+          const end = /[\uD800-\uDBFF]/.test(remaining.charAt(maxChars - 1)) ? maxChars - 1 : maxChars;
+          text = remaining.slice(0, end);
+          nextOffset = offset + end;
+          hasText = Boolean(pageText);
           lastRead = n;
-          nextPage = n < last ? n + 1 : null;
-        } else {
-          nextPage = n;
         }
-        truncated = true;
         break;
       }
-      text += block;
+      text += remaining;
+      hasText ||= Boolean(pageText);
       lastRead = n;
     }
-    const hasText = /--- page \d+ ---\n\S/.test(text);
     return {
       total_pages: totalPages,
       page_from: first,
       page_to: lastRead,
-      truncated,
+      truncated: nextPage !== null,
       next_page: nextPage,
+      next_page_offset: nextPage === null ? null : nextOffset,
       has_text: hasText,
       text,
     };
@@ -360,7 +368,7 @@ function originalResource({ projectId, activityId, file, buf, mimeType }) {
 
 /** Build the MCP CallToolResult for a downloaded file. */
 export async function buildReadResult({ projectId, activityId, file, buf, options = {}, pdfExtractor = extractPdfText }) {
-  const { kind, mimeType } = resolveKind(buf, file);
+  const { kind, mimeType } = resolveKind(buf, { filename: file.filename, contentType: file.content_type });
   const maxChars = options.max_chars ?? DEFAULT_MAX_CHARS;
   const meta = {
     notice: ATTACHMENT_NOTICE,
@@ -389,13 +397,15 @@ export async function buildReadResult({ projectId, activityId, file, buf, option
       attachOriginal = false; // the image block already is the original
     }
   } else if (kind === 'pdf') {
-    const pdf = await pdfExtractor(buf, { pageFrom: options.page_from, pageTo: options.page_to, maxChars });
+    const pdf = await pdfExtractor(buf, {
+      pageFrom: options.page_from, pageTo: options.page_to, pageOffset: options.page_offset, maxChars,
+    });
     const { text, ...pdfMeta } = pdf;
     meta.pdf = pdfMeta;
-    if (!pdf.has_text) {
+    if (pdf.truncated && pdf.next_page) {
+      meta.note = `To continue, keep the same page_to and call with page_from=${pdf.next_page} and page_offset=${pdf.next_page_offset}.`;
+    } else if (!pdf.has_text) {
       meta.note = 'No text layer found in these pages (likely a scanned PDF). Call again with include_original=true to receive the PDF itself.';
-    } else if (pdf.truncated && pdf.next_page) {
-      meta.note = `Output truncated at max_chars; call again with page_from=${pdf.next_page} to continue.`;
     }
     if (text) content.push({ type: 'text', text });
   } else if (kind === 'text') {

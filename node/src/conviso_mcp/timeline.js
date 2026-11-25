@@ -102,13 +102,14 @@ export function parseDateBound(value, name, endOfDay = false) {
   return ms;
 }
 
+function withinDateBounds(timestamp, sinceMs, untilMs) {
+  const t = Date.parse(timestamp);
+  return Number.isFinite(t) && (sinceMs === null || t >= sinceMs) && (untilMs === null || t <= untilMs);
+}
+
 export function filterByDate(events, sinceMs, untilMs) {
   if (sinceMs === null && untilMs === null) return events;
-  return events.filter((e) => {
-    const t = Date.parse(e.at);
-    if (Number.isNaN(t)) return false;
-    return (sinceMs === null || t >= sinceMs) && (untilMs === null || t <= untilMs);
-  });
+  return events.filter((e) => withinDateBounds(e.at, sinceMs, untilMs));
 }
 
 export function sortNewestFirst(events) {
@@ -695,23 +696,45 @@ async function projectTimeline(execute, ctx) {
 async function activityTimeline(execute, ctx) {
   if (!ctx.project_id) throw publicError(400, 'object_type "activity" requires project_id');
   const notes = [];
-  const data = await execute(ACTIVITY_TIMELINE_QUERY, {
-    projectId: ctx.project_id,
-    activityId: ctx.object_id,
-    pagination: { page: ctx.page, perPage: ctx.limit },
-  });
-  const activity = data?.activities?.collection?.[0];
-  if (!activity) throw notFound('activity', ctx.object_id);
+  async function fetchPage(page, perPage) {
+    const data = await execute(ACTIVITY_TIMELINE_QUERY, {
+      projectId: ctx.project_id, activityId: ctx.object_id, pagination: { page, perPage },
+    });
+    const activity = data?.activities?.collection?.[0];
+    if (!activity) throw notFound('activity', ctx.object_id);
+    return activity;
+  }
 
-  let events = (activity.history?.collection || []).map(normalizeActivityHistoryEntry);
-  if (ctx.sinceMs !== null || ctx.untilMs !== null) {
-    events = filterByDate(events, ctx.sinceMs, ctx.untilMs);
-    notes.push('since/until were applied to this page only: the platform paginates activity history itself.');
+  const filtered = ctx.sinceMs !== null || ctx.untilMs !== null;
+  const activity = filtered ? await fetchPage(1, SOURCE_PAGE_SIZE) : await fetchPage(ctx.page, ctx.limit);
+  const meta = activity.history?.metadata || {};
+  let events;
+  let pagination;
+  if (filtered) {
+    // The API serves history newest first. Count every match but retain only the requested page.
+    events = [];
+    let total = 0;
+    const start = (ctx.page - 1) * ctx.limit;
+    let history = activity.history;
+    for (let page = 1; ; page += 1) {
+      const entries = history?.collection || [];
+      for (const entry of entries) {
+        if (!withinDateBounds(entry.createdAt, ctx.sinceMs, ctx.untilMs)) continue;
+        if (total >= start && events.length < ctx.limit) events.push(normalizeActivityHistoryEntry(entry));
+        total += 1;
+      }
+      if (page >= (meta.totalPages || 1) || !entries.length) break;
+      if (ctx.sinceMs !== null && Date.parse(entries.at(-1).createdAt) < ctx.sinceMs) break;
+      history = (await fetchPage(page + 1, SOURCE_PAGE_SIZE)).history;
+    }
+    pagination = { page: ctx.page, limit: ctx.limit, total, total_pages: Math.max(1, Math.ceil(total / ctx.limit)), mode: 'client' };
+  } else {
+    events = (activity.history?.collection || []).map(normalizeActivityHistoryEntry);
+    pagination = { page: ctx.page, limit: ctx.limit, total: meta.totalCount ?? null, total_pages: meta.totalPages ?? null, mode: 'server' };
   }
   if (events.some((e) => e.details?.attachments)) {
     notes.push('Entries with details.attachments carry evidence files: read them with read_activity_attachment.');
   }
-  const meta = activity.history?.metadata || {};
   return {
     object: {
       type: 'activity',
@@ -724,7 +747,7 @@ async function activityTimeline(execute, ctx) {
       project_requirement: activity.projectRequirement,
     },
     events,
-    pagination: { page: ctx.page, limit: ctx.limit, total: meta.totalCount ?? null, total_pages: meta.totalPages ?? null, mode: 'server' },
+    pagination,
     notes,
   };
 }

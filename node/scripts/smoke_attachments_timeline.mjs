@@ -73,7 +73,7 @@ if (args.project && args.activity) {
   for (const a of listing?.attachments || []) {
     console.log(`\n# read_activity_attachment(#${a.id} ${a.filename})`);
     await step(`read ${a.id}`, async () => {
-      const result = await gql.read_activity_attachment({ project_id: args.project, activity_id: args.activity, attachment_id: Number(a.id), max_chars: 2000 });
+      const result = await gql.read_activity_attachment({ project_id: args.project, activity_id: args.activity, attachment_id: a.id, max_chars: 2000 });
       console.log(`  ${JSON.stringify(summarizeContent(result))}`);
     });
   }

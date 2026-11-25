@@ -223,6 +223,28 @@ test('activity: requires project_id and paginates on the server', async () => {
   assert.ok(out.notes.some((n) => /read_activity_attachment/.test(n)));
 });
 
+test('activity date filters paginate all matches and stop once history predates since', async () => {
+  const pages = [
+    ['2026-12-01'],
+    ['2026-11-30T23:59:59.999Z', '2026-11-01T00:00:00Z', '2026-10-31'],
+  ];
+  const { execute, calls } = fakeExecute({
+    ActivityTimeline: ({ pagination }) => ({
+      activities: { collection: [{ id: '77', history: {
+        collection: pages[pagination.page - 1].map((createdAt) => ({ createdAt, actionType: 'STATUS_CHANGE' })),
+        metadata: { totalCount: 5, totalPages: 3 },
+      } }] },
+    }),
+  });
+  const args = { object_type: 'activity', object_id: 77, project_id: 10, since: '2026-11-01', until: '2026-11-30', limit: 1 };
+  for (const page of [1, 2, 3]) {
+    const out = await getObjectTimeline(execute, { ...args, page });
+    assert.deepEqual(out.events.map((event) => event.at), pages[1].slice(0, 2).slice(page - 1, page));
+    assert.deepEqual(out.pagination, { page, limit: 1, total: 2, total_pages: 2, mode: 'client' });
+  }
+  assert.deepEqual(calls.map((call) => call.variables.pagination.page), [1, 2, 1, 2, 1, 2]);
+});
+
 test('issue: server-side timeline with filters translated to the platform input', async () => {
   const { execute, calls } = fakeExecute({
     IssueTimeline: {
