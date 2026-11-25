@@ -410,7 +410,7 @@ function sizeOf(widget, kind, index, title) {
   return { ...WIDGET_SIZES[DEFAULT_SIZE_BY_KIND[kind] || 'HALF'] };
 }
 
-function normalizeWidget(raw, index, catalog, usedKeys) {
+function normalizeWidget(raw, index, catalog, key, savedLayout) {
   if (!isObject(raw)) throw publicError(400, `Widget ${index} must be an object.`);
   const widget = renameKeys(raw, QUERY_ALIASES);
   const title = String(widget.title ?? '').trim();
@@ -437,12 +437,12 @@ function normalizeWidget(raw, index, catalog, usedKeys) {
   }
 
   return {
-    key: widgetKey(title, usedKeys, widget.key),
+    key,
     title,
     metric: { key: metric.key, version: metric.version },
     query,
     visualization: { kind },
-    layout: { x: 0, y: 0, ...sizeOf(widget, kind, index, title), order: index },
+    layout: { x: 0, y: 0, ...sizeOf({ ...widget, layout: widget.layout ?? savedLayout }, kind, index, title), order: index },
     enabled: widget.enabled !== false,
   };
 }
@@ -510,8 +510,34 @@ export function buildDefinition(spec = {}, catalog, base = null) {
   if (spec.widgets.length > limit) {
     throw publicError(400, `A dashboard holds at most ${limit} widgets; got ${spec.widgets.length}. Split it into more than one dashboard.`);
   }
+  // Assign explicit keys first so an earlier title cannot claim a later widget's identity.
   const usedKeys = new Set();
-  definition.widgets = packLayout(spec.widgets.map((w, i) => normalizeWidget(w, i, catalog, usedKeys)));
+  const keys = spec.widgets.map((w) => {
+    if (typeof w?.key !== 'string' || !KEY_PATTERN.test(w.key) || usedKeys.has(w.key)) return null;
+    usedKeys.add(w.key);
+    return w.key;
+  });
+  const savedWidgets = base?.widgets ?? [];
+  const savedByKey = new Map(savedWidgets.map((w) => [w.key, w]));
+  const widgets = spec.widgets.map((w, i) => {
+    const key = keys[i] ?? widgetKey(w?.title, usedKeys);
+    return normalizeWidget(w, i, catalog, key, savedByKey.get(key)?.layout);
+  });
+  const sameGrid = widgets.length === savedWidgets.length && widgets.every((w, i) => {
+    const saved = savedWidgets[i];
+    return w.key === saved.key && w.layout.width === saved.layout.width && w.layout.height === saved.layout.height;
+  });
+  if (sameGrid) {
+    definition.widgets = widgets.map((w, i) => {
+      const saved = savedWidgets[i].layout;
+      const requested = spec.widgets[i].layout;
+      return { ...w, layout: {
+        ...w.layout, x: requested?.x ?? saved.x, y: requested?.y ?? saved.y, order: requested?.order ?? saved.order,
+      } };
+    });
+  } else {
+    definition.widgets = packLayout(widgets);
+  }
   return definition;
 }
 
@@ -604,6 +630,12 @@ async function mapWithConcurrency(items, concurrency, fn) {
  * per call, so each runs inside a copy of the dashboard holding only that widget.
  */
 export async function previewDefinition(execute, companyId, definition, { concurrency = DEFAULT_PREVIEW_CONCURRENCY } = {}) {
+  if (!definition.widgets.length) {
+    return {
+      dry_run: true, saved: false, valid: null, preview_succeeded: false, widgets: [],
+      note: 'The platform preview requires one widget. It could not validate the metadata of this empty dashboard.',
+    };
+  }
   const dashboardErrors = new Map();
   const widgets = await mapWithConcurrency(definition.widgets, Math.max(1, concurrency), async (widget, index) => {
     const single = { ...definition, widgets: [widget] };
@@ -641,6 +673,7 @@ export async function previewDefinition(execute, companyId, definition, { concur
     dry_run: true,
     saved: false,
     valid: dashboardErrors.size === 0 && !states.includes('INVALID_CONFIGURATION') && !states.includes('NOT_COMPUTED'),
+    preview_succeeded: states.every((state) => state === 'READY' || state === 'NO_DATA'),
     dashboard_errors: dashboardErrors.size ? [...dashboardErrors.values()] : undefined,
     widgets,
     note: 'Nothing was saved. READY means the widget computed (a zero count is READY); NO_DATA means a mean or rate had nothing to measure; FORBIDDEN means the API key user cannot read that data. Fix invalid widgets, then call again without dry_run.',

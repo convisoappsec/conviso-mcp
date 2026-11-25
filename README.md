@@ -87,7 +87,9 @@ quarter and the list of overdue ones":
    the widgets are given (`size`: `SMALL`, `MEDIUM`, `HALF`, `WIDE` or `FULL`).
 3. `dry_run: true` validates and computes every widget without saving, so the model can check
    that each one returns what was asked. A validation error comes back per widget, with the
-   path, code and message from the platform.
+   path, code and message from the platform. Check both `valid` (definition validation) and
+   `preview_succeeded` (every widget returned `READY` or `NO_DATA`) before saving. For an
+   existing empty dashboard, the platform cannot preview metadata: `valid` is `null`.
 4. Without `dry_run`, the dashboard is saved and the tool returns its id, `lock_version` and link.
 
 To change a dashboard, read it with `get_custom_dashboard`, edit its widgets and send them to

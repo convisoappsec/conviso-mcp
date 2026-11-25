@@ -80,15 +80,19 @@ const spec = {
 
 const dry = await step('create_custom_dashboard(dry_run)', async () => {
   const out = await gql.create_custom_dashboard({ ...spec, dry_run: true });
-  console.log(`  valid=${out.valid} saved=${out.saved}`);
+  console.log(`  valid=${out.valid} preview_succeeded=${out.preview_succeeded} saved=${out.saved}`);
   for (const e of out.dashboard_errors || []) console.log(`  dashboard: ${e.path} ${e.code}: ${e.message}`);
   printWidgets(out.widgets);
   return out;
 });
 
-if (dryOnly || !dry?.valid) {
-  console.log(dryOnly ? '\n--dry-only: nothing written.' : '\nDry run not valid: stopping before any write.');
-  process.exit(failures || !dry?.valid ? 1 : 0);
+if (!dry?.valid || !dry.preview_succeeded) {
+  console.log('\nDashboard preview failed. See widget results above.');
+  process.exit(1);
+}
+if (dryOnly) {
+  console.log('\nDry run complete.');
+  process.exit(0);
 }
 
 const created = await step('create_custom_dashboard', async () => {

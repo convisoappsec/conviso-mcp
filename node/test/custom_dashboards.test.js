@@ -209,6 +209,27 @@ test('without widgets an update keeps the current widget list untouched', () => 
   assert.equal(def.widgets, base.widgets);
 });
 
+test('editing widget content preserves its saved placement, including nonsequential order', () => {
+  const initial = { key: 'total', title: 'Total', metric: 'issues.count', visualization: 'NUMBER' };
+  const base = buildDefinition({ name: 'B', widgets: [initial] }, CATALOG);
+  const layout = { x: 4, y: 7, width: 8, height: 3, order: 9 };
+  base.widgets[0].layout = layout;
+  for (const widget of [initial, base.widgets[0]]) {
+    const edited = buildDefinition({ widgets: [{ ...widget, title: 'Renamed' }] }, CATALOG, base);
+    assert.equal(edited.widgets[0].title, 'Renamed');
+    assert.deepEqual(edited.widgets[0].layout, layout);
+  }
+  const resized = buildDefinition({ widgets: [{ ...initial, size: 'SMALL' }] }, CATALOG, base);
+  assert.deepEqual(resized.widgets[0].layout, { x: 0, y: 0, width: 3, height: 2, order: 0 });
+});
+
+test('new titles cannot take a later explicit key or its numbered suffix', () => {
+  const input = { title: 'Total', metric: 'issues.count', visualization: 'NUMBER' };
+  const base = buildDefinition({ name: 'B', widgets: [input, input] }, CATALOG);
+  const edited = buildDefinition({ widgets: [input, ...base.widgets] }, CATALOG, base);
+  assert.deepEqual(edited.widgets.map((w) => w.key), ['total-3', 'total', 'total-2']);
+});
+
 test('buildDefinition rejects what it cannot assemble, with a safe message', () => {
   const ok = { title: 'T', metric: 'issues.count', visualization: 'NUMBER' };
   const unknown = (() => { try { buildDefinition({ name: 'D', widgets: [{ ...ok, metric: 'nope.metric' }] }, CATALOG); } catch (e) { return e; } })();
@@ -357,6 +378,38 @@ test('dry_run reports dashboard-level errors once and stops on authorization err
     PreviewCustomDashboardWidget: () => { throw graphqlError('NOT_AUTHORIZED'); },
   });
   await assert.rejects(createCustomDashboard(denied.execute, { company_id: 1, name: 'D', dry_run: true, widgets }), (e) => e.status === 403);
+});
+
+test('dry_run distinguishes a valid definition from a successful widget computation', async () => {
+  const { execute } = fakeExecute({
+    CustomDashboardCatalog: { customDashboardMetricCatalog: CATALOG },
+    PreviewCustomDashboardWidget: ({ definition }) => ({
+      previewCustomDashboardWidget: { state: definition.widgets[0].title },
+    }),
+  });
+  for (const state of ['ERROR', 'FORBIDDEN', 'UNAVAILABLE', 'NO_DATA', 'READY']) {
+    const preview = await createCustomDashboard(execute, {
+      company_id: 1, name: 'B', dry_run: true,
+      widgets: [{ title: state, metric: 'issues.count', visualization: 'NUMBER' }],
+    });
+    assert.equal(preview.valid, true, state);
+    assert.equal(preview.preview_succeeded, ['READY', 'NO_DATA'].includes(state), state);
+  }
+});
+
+test('metadata-only dry_run on an empty dashboard reports that validation was unavailable', async () => {
+  const { execute, calls } = fakeExecute({
+    CustomDashboard: { customDashboard: { ...DASHBOARD, definition: { name: 'Empty', widgets: [] } } },
+    CustomDashboardCatalog: { customDashboardMetricCatalog: CATALOG },
+  });
+  const preview = await updateCustomDashboard(execute, {
+    company_id: 1, dashboard_id: 77, expected_version: 3, timezone: 'Mars/Base', dry_run: true,
+  });
+  assert.equal(preview.valid, null);
+  assert.equal(preview.preview_succeeded, false);
+  assert.equal(preview.saved, false);
+  assert.match(preview.note, /could not validate the metadata/);
+  assert.ok(!calls.some((c) => c.op === 'UpdateCustomDashboard'));
 });
 
 test('update checks the revision and edit access before writing, then sends expectedVersion', async () => {

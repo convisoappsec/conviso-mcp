@@ -107,7 +107,7 @@ const DASHBOARD_FIELDS = {
     .describe('Instead of period_days: {mode:"LAST_DAYS_INCLUDING_TODAY", days} or {mode:"ABSOLUTE", startDate, endDate}.'),
   default_filters: z.record(z.string(), z.any()).optional()
     .describe('Dashboard-wide filters: {assetIds, assetTags:{mode:"ANY"|"ALL", names}, archived:"ACTIVE"|"ARCHIVED"|"ALL"}. Default {archived:"ACTIVE"}.'),
-  dry_run: z.boolean().optional().describe('Validate and compute every widget without saving.'),
+  dry_run: z.boolean().optional().describe('Preview without saving. Check valid and preview_succeeded. On an empty dashboard valid is null.'),
 };
 
 /**
