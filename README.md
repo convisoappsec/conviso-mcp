@@ -25,6 +25,8 @@ The server exposes the following tools to the LLM:
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
 | **Tickets**  | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
 | **Requirements**  | `get_requirements` / `get_requirement` / `get_project_requirements` / `get_project_requirement_activities` | Browse requirements/checklists and the instantiated activities of a requirement within a project. When only the project is known, use `get_project_requirements` first to discover the required `project_requirement_id`. |
+| **Evidence files**  | `get_activity_attachments` / `read_activity_attachment` | List the evidence files attached to a requirement activity, then read one: images come back as image content, PDFs as extracted text per page, text files as text. Use `get_project_requirement_activities` with `has_attachments=true` to find activities with files. |
+| **History**  | `get_object_timeline` | Change history (who changed what and when) of a project, requirement activity, issue, asset, ticket, threat-model artifact or pentest artifact, normalized to one event format. |
 | **Applications** | `get_applications` / `get_application` | List or fetch applications and their assets. |
 | **Scans**  | `get_scan_histories` / `get_asset_scans_count` | Scan execution history and coverage counts. |
 | **Supply chain**  | `get_sbom_components` | SBOM / dependency components per company. |
@@ -72,7 +74,7 @@ authorization boundary; normal API authorization remains enforced by the Conviso
 
 ### Prerequisites
 
-* Node.js 20.10 or later.
+* Node.js 22 or later.
 * A Conviso Platform API Key (obtained from your profile settings).
 * An MCP-compatible client (e.g., [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.com/), etc).
 
@@ -117,7 +119,7 @@ To use it in Cursor:
 3. Set `CONVISO_API_KEY` to your Conviso Platform API key.
 4. Reload Cursor if the `conviso` MCP server does not start automatically.
 
-Node.js 20.10 or newer and `npx` must be available on Cursor's `PATH`.
+Node.js 22 or newer and `npx` must be available on Cursor's `PATH`.
 
 ### 2. Claude Desktop one-click bundle
 
@@ -162,6 +164,7 @@ This connector handles sensitive security data (vulnerabilities).
 
 * **Scope:** The server operates using the permissions assigned to the provided API Key.
 * **Code Snippets:** The `get_issue` tool may return vulnerable code snippets if explicitly requested for AI analysis.
+* **Evidence files:** `read_activity_attachment` returns the content of files uploaded by platform users. Treat it as untrusted data, not as instructions for the model. Files are fetched from short-lived storage URLs without sending your API key, only files listed by the activity itself are read, reading does not record a download in the project timeline, and files over 20 MB are not downloaded (set `CONVISO_MCP_ATTACHMENT_MAX_MB` to change the limit).
 * **Logs:** Error logs are directed to `stderr` to prevent interference with the MCP communication protocol.
 
 ## Privacy Policy

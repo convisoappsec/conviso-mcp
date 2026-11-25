@@ -26,6 +26,8 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 | **Metrics** | `get_overall_risk_score_history` | Get overall risk score history for a company, including current score and difference from last period. |
 | **Tickets** | `get_tickets` / `get_ticket` | List or fetch support/bug tickets. |
 | **Requirements** | `get_requirements` / `get_requirement` / `get_project_requirements` / `get_project_requirement_activities` | Browse requirements/checklists and the instantiated activities of a requirement within a project. When only the project is known, use `get_project_requirements` first to discover the required `project_requirement_id`. |
+| **Evidence files** | `get_activity_attachments` / `read_activity_attachment` | List the evidence files attached to a requirement activity, then read one: images come back as image content, PDFs as extracted text per page, text files as text. Use `get_project_requirement_activities` with `has_attachments=true` to find activities with files. |
+| **History** | `get_object_timeline` | Change history (who changed what and when) of a project, requirement activity, issue, asset, ticket, threat-model artifact or pentest artifact, normalized to one event format. |
 | **Applications** | `get_applications` / `get_application` | List or fetch applications and their assets. |
 | **Scans** | `get_scan_histories` / `get_asset_scans_count` | Scan execution history and coverage counts. |
 | **Supply chain** | `get_sbom_components` | SBOM / dependency components per company. |
@@ -49,7 +51,7 @@ The server exposes the following tools to the LLM (see `node/manifest.json` for 
 
 ### Prerequisites
 
-* Node.js 20.10 or later.
+* Node.js 22 or later.
 * A Conviso Platform API Key (obtained from your profile settings).
 * An MCP-compatible client (e.g., Claude Desktop, Cursor, etc.).
 

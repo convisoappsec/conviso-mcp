@@ -2,6 +2,8 @@ import axios from 'axios';
 import https from 'node:https';
 import * as F from './filters.js';
 import { buildMutationQuery } from './mutations.js';
+import { listActivityAttachments, readActivityAttachment } from './attachments.js';
+import { getObjectTimeline } from './timeline.js';
 
 /** Drop only undefined/null keys, keeping false/0/'' so intentional values survive. */
 function compact(obj) {
@@ -512,6 +514,7 @@ export function buildProjectRequirementActivitiesVariables(projectId, projectReq
   sortBy = 'SORT',
   descending = false,
   attachmentActionsOnly,
+  hasAttachments,
 } = {}) {
   return {
     page,
@@ -524,6 +527,7 @@ export function buildProjectRequirementActivitiesVariables(projectId, projectReq
       projectId,
       projectRequirementId,
       title,
+      hasAttachments,
     }),
   };
 }
@@ -998,7 +1002,7 @@ class GraphQLClient {
       ) {
         activities(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending: $descending) {
           collection {
-            id title status permittedStatus description reference updatedAt reason
+            id title status permittedStatus description reference updatedAt reason attachmentsCount
             history(pagination: $historyPagination, attachmentActionsOnly: $attachmentActionsOnly) {
               metadata { totalCount }
             }
@@ -1013,6 +1017,19 @@ class GraphQLClient {
       query,
       buildProjectRequirementActivitiesVariables(project_id, project_requirement_id, options),
     );
+  }
+
+  // --- Activity evidence files and object timelines (logic in attachments.js / timeline.js)
+  async get_activity_attachments(project_id, activity_id) {
+    return listActivityAttachments((q, v) => this.execute(q, v), project_id, activity_id);
+  }
+
+  async read_activity_attachment(args = {}, deps = {}) {
+    return readActivityAttachment((q, v) => this.execute(q, v), args, deps);
+  }
+
+  async get_object_timeline(args = {}) {
+    return getObjectTimeline((q, v) => this.execute(q, v), args);
   }
 
   async get_applications(company_id, search = null) {

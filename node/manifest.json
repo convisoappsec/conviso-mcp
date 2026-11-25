@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.8.0",
-  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling) from MCP clients.",
-  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
+  "version": "0.9.0",
+  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements and activity evidence files, applications, scans, supply chain, AI-pentest, threat modeling, object timelines) from MCP clients.",
+  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, the evidence files attached to requirement activities (PDF text, images, text files) and the change timeline of projects, activities, issues, assets, tickets, threat models and pentests, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
   "author": {
     "name": "Conviso",
     "url": "https://github.com/convisoappsec"
@@ -117,7 +117,19 @@
     },
     {
       "name": "get_project_requirement_activities",
-      "description": "List instantiated activities for a project requirement, including status, assignees and history count."
+      "description": "List instantiated activities for a project requirement, including status, assignees, history count and attachments count; has_attachments keeps only activities with evidence files."
+    },
+    {
+      "name": "get_activity_attachments",
+      "description": "List the evidence files attached to a requirement activity (filename, type, size, uploader, upload date and the history entry they came with)."
+    },
+    {
+      "name": "read_activity_attachment",
+      "description": "Read one evidence file of a requirement activity: images as image content, PDFs as extracted text per page, text files as text."
+    },
+    {
+      "name": "get_object_timeline",
+      "description": "Change history (who changed what and when) of a project, activity, issue, asset, ticket, threat-model artifact or pentest artifact."
     },
     {
       "name": "get_applications",
@@ -229,7 +241,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.10.0"
+      "node": ">=22"
     }
   },
   "user_config": {
