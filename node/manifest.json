@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "conviso-mcp",
   "display_name": "Conviso MCP Server",
-  "version": "0.8.0",
-  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements, applications, scans, supply chain, AI-pentest, threat modeling) from MCP clients.",
-  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, plus write tools: a generic allowlisted mutation engine (list/describe/execute) and curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest).",
+  "version": "0.10.0",
+  "description": "Read and write Conviso Platform data (companies, projects, issues, assets, tickets, requirements and activity evidence files, applications, scans, supply chain, AI-pentest, threat modeling, object timelines, Metrics Studio dashboards) from MCP clients.",
+  "long_description": "This MCP server exposes the Conviso Platform to MCP clients. It provides read tools for companies, projects, issues, assets, tickets, requirements, applications, scan histories, SBOM/supply-chain components, AI-pentest artifacts/executions and threat-model artifacts, the evidence files attached to requirement activities (PDF text, images, text files) and the change timeline of projects, activities, issues, assets, tickets, threat models and pentests, plus write tools: a generic allowlisted mutation engine (list/describe/execute), curated shortcuts for the most common writes (change issue status, create vulnerabilities/projects/assets/tickets, run DAST, trigger AI-pentest) and Metrics Studio tools that build custom dashboards from a description of what to show (catalog, list, read, create and update, with a dry run that computes every widget before saving).",
   "author": {
     "name": "Conviso",
     "url": "https://github.com/convisoappsec"
@@ -117,7 +117,19 @@
     },
     {
       "name": "get_project_requirement_activities",
-      "description": "List instantiated activities for a project requirement, including status, assignees and history count."
+      "description": "List instantiated activities for a project requirement, including status, assignees, history count and attachments count; has_attachments keeps only activities with evidence files."
+    },
+    {
+      "name": "get_activity_attachments",
+      "description": "List the evidence files attached to a requirement activity (filename, type, size, uploader, upload date and the history entry they came with)."
+    },
+    {
+      "name": "read_activity_attachment",
+      "description": "Read one evidence file of a requirement activity: images as image content, PDFs as extracted text per page, text files as text."
+    },
+    {
+      "name": "get_object_timeline",
+      "description": "Change history (who changed what and when) of a project, activity, issue, asset, ticket, threat-model artifact or pentest artifact."
     },
     {
       "name": "get_applications",
@@ -206,6 +218,26 @@
     {
       "name": "create_pentest_artifact",
       "description": "Curated shortcut: create an AI-Pentest artifact (the scope/config a pentest runs against)."
+    },
+    {
+      "name": "get_custom_dashboard_catalog",
+      "description": "Metrics Studio catalog: every metric a custom dashboard widget can show, with the filters, groupings and visualizations it accepts, plus dimensions, vocabularies and limits."
+    },
+    {
+      "name": "get_custom_dashboards",
+      "description": "List the Metrics Studio custom dashboards of a company that the API key user can open (id, name, widgets, lock_version, link)."
+    },
+    {
+      "name": "get_custom_dashboard",
+      "description": "Get one Metrics Studio custom dashboard with its full definition and lock_version."
+    },
+    {
+      "name": "create_custom_dashboard",
+      "description": "Create a Metrics Studio custom dashboard from widgets described in the catalog vocabulary; dry_run validates and computes every widget without saving."
+    },
+    {
+      "name": "update_custom_dashboard",
+      "description": "Change a Metrics Studio custom dashboard (name, period, filters or the whole widget list), guarded by its lock_version."
     }
   ],
   "tools_generated": false,
@@ -229,7 +261,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=20.10.0"
+      "node": ">=22"
     }
   },
   "user_config": {
