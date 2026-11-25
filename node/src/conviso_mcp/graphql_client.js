@@ -2,6 +2,15 @@ import axios from 'axios';
 import https from 'node:https';
 import * as F from './filters.js';
 import { buildMutationQuery } from './mutations.js';
+import { listActivityAttachments, readActivityAttachment } from './attachments.js';
+import { getObjectTimeline } from './timeline.js';
+import {
+  createCustomDashboard,
+  getCustomDashboard,
+  getCustomDashboardCatalog,
+  listCustomDashboards,
+  updateCustomDashboard,
+} from './custom_dashboards.js';
 
 /** Drop only undefined/null keys, keeping false/0/'' so intentional values survive. */
 function compact(obj) {
@@ -512,6 +521,7 @@ export function buildProjectRequirementActivitiesVariables(projectId, projectReq
   sortBy = 'SORT',
   descending = false,
   attachmentActionsOnly,
+  hasAttachments,
 } = {}) {
   return {
     page,
@@ -524,6 +534,7 @@ export function buildProjectRequirementActivitiesVariables(projectId, projectReq
       projectId,
       projectRequirementId,
       title,
+      hasAttachments,
     }),
   };
 }
@@ -711,6 +722,10 @@ class GraphQLClient {
       // Validation/field errors about the caller's own request — safe and useful to surface
       // so the model can correct the input (e.g. a missing required mutation field).
       e.graphqlErrors = messages;
+      // Kept internal: only callers that know an error family (custom_dashboards.js reads
+      // extensions.code / details) decide what of it may reach the MCP caller.
+      const extensions = response.data.errors.map((x) => x?.extensions).filter((x) => x && typeof x === 'object');
+      if (extensions.length) e.graphqlExtensions = extensions;
       throw e;
     }
 
@@ -1024,7 +1039,7 @@ class GraphQLClient {
       ) {
         activities(page: $page, limit: $limit, params: $params, sortBy: $sortBy, descending: $descending) {
           collection {
-            id title status permittedStatus description reference updatedAt reason
+            id title status permittedStatus description reference updatedAt reason attachmentsCount
             history(pagination: $historyPagination, attachmentActionsOnly: $attachmentActionsOnly) {
               metadata { totalCount }
             }
@@ -1039,6 +1054,44 @@ class GraphQLClient {
       query,
       buildProjectRequirementActivitiesVariables(project_id, project_requirement_id, options),
     );
+  }
+
+  // --- Activity evidence files and object timelines (logic in attachments.js / timeline.js)
+  async get_activity_attachments(project_id, activity_id) {
+    return listActivityAttachments((q, v) => this.execute(q, v), project_id, activity_id);
+  }
+
+  async read_activity_attachment(args = {}, deps = {}) {
+    return readActivityAttachment((q, v) => this.execute(q, v), args, deps);
+  }
+
+  async get_object_timeline(args = {}) {
+    return getObjectTimeline((q, v) => this.execute(q, v), args);
+  }
+
+  // --- Metrics Studio custom dashboards (logic in custom_dashboards.js) -----
+  get appUrl() {
+    return new URL(this.endpoint).origin;
+  }
+
+  async get_custom_dashboard_catalog(args = {}) {
+    return getCustomDashboardCatalog((q, v) => this.execute(q, v), args);
+  }
+
+  async get_custom_dashboards(args = {}) {
+    return listCustomDashboards((q, v) => this.execute(q, v), args, { appUrl: this.appUrl });
+  }
+
+  async get_custom_dashboard(args = {}) {
+    return getCustomDashboard((q, v) => this.execute(q, v), args, { appUrl: this.appUrl });
+  }
+
+  async create_custom_dashboard(args = {}) {
+    return createCustomDashboard((q, v) => this.execute(q, v), args, { appUrl: this.appUrl });
+  }
+
+  async update_custom_dashboard(args = {}) {
+    return updateCustomDashboard((q, v) => this.execute(q, v), args, { appUrl: this.appUrl });
   }
 
   async get_applications(company_id, search = null) {

@@ -44,6 +44,7 @@ test('get_project_requirement_activities requests activity details and paginatio
   assert.match(request.query, /activities\(page: \$page, limit: \$limit/);
   assert.match(request.query, /status permittedStatus/);
   assert.match(request.query, /assignedUsers/);
+  assert.match(request.query, /attachmentsCount/);
   assert.deepEqual(request.variables.params, {
     projectId: 27903,
     projectRequirementId: 12388,
@@ -51,4 +52,14 @@ test('get_project_requirement_activities requests activity details and paginatio
   });
   assert.equal(request.variables.sortBy, 'SORT');
   assert.equal(request.variables.descending, false);
+});
+
+test('has_attachments narrows activities to those with evidence files', () => {
+  const variables = buildProjectRequirementActivitiesVariables(27903, 12388, { hasAttachments: true });
+  assert.deepEqual(variables.params, {
+    projectId: 27903,
+    projectRequirementId: 12388,
+    title: '',
+    hasAttachments: true,
+  });
 });
