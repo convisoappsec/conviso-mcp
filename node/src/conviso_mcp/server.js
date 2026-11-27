@@ -7,8 +7,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 
-import { GraphQLClient } from './graphql_client.js';
-import { listMutations, describeMutation } from './mutations.js';
+import { ASSET_TYPES, GraphQLClient, assertAssetTypeChosen, buildCreateAssetInput } from './graphql_client.js';
+import { listMutations, describeMutation, buildMutationQuery } from './mutations.js';
 import { TIMELINE_OBJECT_TYPES } from './timeline.js';
 import { OWNERSHIP_FILTERS, VISUALIZATION_KINDS, WIDGET_SIZES } from './custom_dashboards.js';
 import pkg from '../../package.json' with { type: 'json' };
@@ -126,7 +126,7 @@ function buildServer() {
   // instead of data to serialize as JSON text. Errors still go through sanitizeError.
   function tool(name, {
     title, desc, schema, write = false, destructive = false, local = false,
-    policy = write, companyId = (args) => args.company_id, raw = false,
+    policy = write, companyId = (args) => args.company_id, raw = false, validate = null,
   }, handler) {
     server.registerTool(
       name,
@@ -143,6 +143,7 @@ function buildServer() {
       },
       async (args) => {
         try {
+          if (validate) validate(args);
           const checkPolicy = typeof policy === 'function' ? policy(args) : policy;
           if (checkPolicy) await gql.assertMcpWriteEnabled(await companyId(args));
           const result = await handler(args);
@@ -259,7 +260,7 @@ function buildServer() {
 
   tool('get_projects', {
     title: 'List Projects',
-    desc: 'List a company\'s security projects (paginated, default 25/page). Optional: search (label substring), statuses and project_types (platform labels, free text e.g. "Fixing", "Pentest"), created_after/created_before (YYYY-MM-DD), tags, analyst_emails, sort_by (default createdAt) + descending.',
+    desc: 'List a company\'s security projects (paginated, default 25/page). Optional: search (label substring), statuses (ANALYSIS, DONE, PAUSED, PLANNED; anything else is refused), project_types (platform labels, free text e.g. "Pentest"), created_after/created_before (YYYY-MM-DD), tags, analyst_emails (assigned users), sort_by (default createdAt) + descending.',
     schema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
@@ -315,7 +316,7 @@ function buildServer() {
 
   tool('get_assets', {
     title: 'List Assets',
-    desc: 'List a company\'s assets (paginated, default 25/page). Optional: name/search (substring), tags, technology, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), asset_type, environment_compromised, covered_by_scan, sort_by (updated_at, name, business_impact, risk_score) + order, extra_filters (raw AssetsSearch keys). Returns collection + metadata.',
+    desc: 'List a company\'s assets (paginated, default 25/page). Optional: name/search (substring), tags, technology, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), asset_type (inventory section: repository, fqdn or api; cloud and certificate also work), environment_compromised, covered_by_scan, sort_by (updated_at, name, business_impact, risk_score) + order, extra_filters (raw AssetsSearch keys). Returns collection + metadata.',
     schema: z.object({
       company_id: z.number(),
       page: z.number().optional(),
@@ -652,7 +653,7 @@ function buildServer() {
 
   tool('execute_mutation', {
     title: 'Execute Mutation',
-    desc: 'Run any permitted write operation by name (see list_mutations). company_id is required only for the MCP write-policy check and is not added to the GraphQL mutation input. If the user supplied an object ID but no company, call get_company_id_from_object first. variables is the mutation input — pass { input: {...} } or the input fields directly (auto-wrapped). Optional return_fields overrides the returned selection set. WARNING: performs writes; delete/bulk operations are destructive — confirm intent first.',
+    desc: 'Run any permitted write operation by name (see list_mutations). company_id is required only for the MCP write-policy check and is not added to the GraphQL mutation input. If the user supplied an object ID but no company, call get_company_id_from_object first. variables is the mutation input — pass { input: {...} } or the input fields directly (auto-wrapped). Optional return_fields overrides the returned selection set. To create an asset prefer create_asset; createAsset here needs assetType "domain" or "api", or only repoUrl. WARNING: performs writes; delete/bulk operations are destructive — confirm intent first.',
     schema: z.object({
       company_id: z.number(),
       name: z.string(),
@@ -662,6 +663,9 @@ function buildServer() {
     write: true,
     destructive: true,
     policy: ({ name }) => name !== 'createTicket',
+    validate: ({ name, variables = {} }) => {
+      if (name === 'createAsset') assertAssetTypeChosen(buildMutationQuery(name, variables).variables.input);
+    },
   }, ({ name, variables = {}, return_fields = null }) =>
     gql.executeMutation(name, variables, return_fields));
 
@@ -716,7 +720,7 @@ function buildServer() {
 
   tool('create_project', {
     title: 'Create Project',
-    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, allocatedPortalUserEmails...).',
+    desc: 'Create a project. Required: company_id, type_id (call get_project_types to find it), label, goal, scope, start_date (YYYY-MM-DD). Optional: end_date; requirement_ids = requirement/checklist ids to associate (find them with get_requirements — the platform calls these playbooks); asset_ids = asset ids to link; extra = advanced CreateProjectInput fields (tags, assigneeEmails...).',
     schema: z.object({
       company_id: z.number(),
       type_id: z.number(),
@@ -734,11 +738,12 @@ function buildServer() {
 
   tool('create_asset', {
     title: 'Create Asset',
-    desc: 'Create an asset. Required: company_id, name. Optional: asset_type, url, description, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), tags; extra = advanced CreateAssetInput fields.',
+    desc: 'Create an asset. asset_type picks the inventory section it lands in: repository (Repositories; requires repo_url, the source code repository URL, and derives the name from it unless name is given), fqdn (FQDN; requires name and url) or api (API; requires name and url). If the user did not say which type the asset is, ask before calling; never infer it. Required: company_id, asset_type. Optional: description, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), tags; extra = advanced CreateAssetInput fields (not companyId, name, url, assetType or repoUrl).',
     schema: z.object({
       company_id: z.number(),
-      name: z.string(),
-      asset_type: z.string().optional(),
+      asset_type: z.string().optional().describe(ASSET_TYPES.join(', ')),
+      name: z.string().optional(),
+      repo_url: z.string().optional(),
       url: z.string().optional(),
       description: z.string().optional(),
       business_impact: z.string().optional(),
@@ -747,6 +752,7 @@ function buildServer() {
       extra: z.record(z.string(), z.any()).optional(),
     }),
     write: true,
+    validate: buildCreateAssetInput,
   }, (a) => gql.create_asset(a));
 
   tool('create_ticket', {
