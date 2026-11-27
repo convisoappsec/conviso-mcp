@@ -77,18 +77,64 @@ export function buildCreateProjectInput(a = {}) {
   };
 }
 
+export const ASSET_TYPES = ['repository', 'fqdn', 'api'];
+const PLATFORM_ASSET_TYPE = { fqdn: 'domain', api: 'api' };
+const ASSET_TYPE_LABEL = { fqdn: 'FQDN', api: 'API' };
+const ASK_FOR_ASSET_TYPE = 'Ask the user whether it is a repository, an FQDN or an API before creating it; do not infer the type.';
+
+function invalidInput(message) {
+  const error = new Error(message);
+  error.status = 400;
+  error.publicMessage = message;
+  return error;
+}
+
+const CREATABLE_PLATFORM_ASSET_TYPES = ['domain', 'api'];
+const CREATE_ASSET_FIELDS = ['companyId', 'name', 'url', 'assetType', 'repoUrl'];
+
+export function assertAssetTypeChosen(input) {
+  if (input !== undefined && (input === null || typeof input !== 'object' || Array.isArray(input))) {
+    throw invalidInput('createAsset variables must be an object with the input fields.');
+  }
+  const { assetType, repoUrl } = input || {};
+  const type = String(assetType || '').trim().toLowerCase();
+  if (CREATABLE_PLATFORM_ASSET_TYPES.includes(type) && !repoUrl) return;
+  if (!type && repoUrl) return;
+  throw invalidInput(`createAsset needs assetType "domain" (FQDN) or "api", or only repoUrl for a repository. ${ASK_FOR_ASSET_TYPE}`);
+}
+
 export function buildCreateAssetInput(a = {}) {
+  const type = F.normalizeEnum(a.asset_type, ASSET_TYPES, false);
+  if (!type) {
+    throw invalidInput(`asset_type is required: one of ${ASSET_TYPES.join(', ')}. ${ASK_FOR_ASSET_TYPE}`);
+  }
+  const extra = a.extra || {};
+  const overridden = CREATE_ASSET_FIELDS.find((key) => key in extra);
+  if (overridden) {
+    throw invalidInput(`Pass ${overridden} through the create_asset arguments, not extra.${overridden}.`);
+  }
+  const repository = type === 'repository';
+  if (repository && !a.repo_url) {
+    throw invalidInput('A repository asset needs repo_url, the URL of its source code repository.');
+  }
+  if (!repository && a.repo_url) {
+    throw invalidInput(`repo_url is only for repository assets, not for an ${ASSET_TYPE_LABEL[type]}.`);
+  }
+  if (!repository && !(a.name && a.url)) {
+    throw invalidInput(`An ${ASSET_TYPE_LABEL[type]} asset needs name and url.`);
+  }
   return {
     input: compact({
       companyId: a.company_id,
       name: a.name,
-      assetType: a.asset_type,
+      assetType: PLATFORM_ASSET_TYPE[type],
+      repoUrl: repository ? a.repo_url : undefined,
       url: a.url,
       description: a.description,
       businessImpact: a.business_impact,
       exploitability: a.exploitability,
       assetsTagList: a.tags,
-      ...(a.extra || {}),
+      ...extra,
     }),
   };
 }
@@ -406,6 +452,16 @@ export const ASSETS_QUERY = `
   }
 `;
 
+const NOT_REPOSITORY_ASSET_TYPES = ['cloud', 'domain', 'api', 'certificate'];
+
+export function assetTypeFilter(assetType) {
+  if (assetType === null || assetType === undefined || assetType === '') return {};
+  const type = String(assetType).trim().toLowerCase();
+  if (type === 'repository') return { notAssetType: NOT_REPOSITORY_ASSET_TYPES };
+  if (type === 'fqdn') return { assetType: 'domain' };
+  return { assetType: type };
+}
+
 export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {}) {
   const {
     name, search, tags, technology, businessImpact, exploitability, assetType,
@@ -418,7 +474,7 @@ export function buildAssetsVariables(companyId, page = 1, limit = 10, opts = {})
     technology: technology || [],
     businessImpact: F.normalizeEnumList(businessImpact, F.BUSINESS_IMPACT),
     exploitability: F.normalizeEnumList(exploitability, F.EXPLOITABILITY),
-    assetType,
+    ...assetTypeFilter(assetType),
     sortBy: F.normalizeEnum(sortBy, F.ASSET_SORT_BY, false),
     order: F.normalizeEnum(order, F.ORDER),
   });
@@ -496,6 +552,14 @@ const PROJECTS_QUERY = `
     }
 `;
 
+function projectStatuses(statuses) {
+  const valid = F.normalizeEnumList(statuses, F.PROJECT_STATUSES);
+  if (valid.length !== (statuses || []).length) {
+    throw invalidInput(`statuses must be among ${F.PROJECT_STATUSES.join(', ')}; got ${JSON.stringify(statuses)}.`);
+  }
+  return valid;
+}
+
 export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts = {}) {
   const {
     search, statuses, projectTypes, createdAfter, createdBefore, tags, analystEmails,
@@ -504,12 +568,12 @@ export function buildProjectsVariables(companyId, page = 1, limit = 1000, opts =
   const params = F.prune({
     scopeIdEq: companyId,
     labelCont: search,
-    projectStatusLabelIn: statuses || [],
+    projectStatusLabelIn: projectStatuses(statuses),
     projectTypeLabelIn: projectTypes || [],
     createdAtGteq: createdAfter,
     createdAtLteq: createdBefore,
     tags: tags || [],
-    analystsEmailIn: analystEmails || [],
+    assigneeEmails: analystEmails || [],
   });
   return { page, limit, params, sortBy, descending };
 }
@@ -553,8 +617,8 @@ const MCP_WRITE_POLICY_FIELD_MISSING =
 
 const MCP_WRITE_POLICY_QUERY = `
   query McpWritePolicy($companyId: ID!) {
-    policyControls(companyId: $companyId) {
-      enableMcpWrite
+    company(id: $companyId) {
+      policies { enableMcpWrite }
     }
   }
 `;
@@ -626,7 +690,15 @@ class GraphQLClient {
       if (fieldNotDeployed) return;
       throw error;
     }
-    if (data?.policyControls?.enableMcpWrite !== true) {
+    if (!data?.company) {
+      const error = new Error(`Could not read the MCP write policy of company ${companyId}`);
+      error.status = 403;
+      error.publicMessage = error.message;
+      throw error;
+    }
+    const policies = data.company.policies;
+    if (policies == null) return;
+    if (policies.enableMcpWrite !== true) {
       const error = new Error(`MCP write operations are disabled by company ${companyId} policy`);
       error.status = 403;
       // Explicitly safe to return to the MCP caller. Other upstream errors stay sanitized.
@@ -933,6 +1005,7 @@ class GraphQLClient {
   // SDL-derived catalog (whitelist) and executes it. `variables` is typically { input }.
   async executeMutation(name, variables = {}, returnFields = null) {
     const built = buildMutationQuery(name, variables, returnFields);
+    if (name === 'createAsset') assertAssetTypeChosen(built.variables.input);
     return this.execute(built.query, built.variables);
   }
 

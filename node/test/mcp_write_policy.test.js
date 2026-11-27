@@ -26,17 +26,18 @@ async function withGraphqlResponse(responseData, fn) {
 
 test('assertMcpWriteEnabled checks the company policy', async () => {
   const body = await withGraphqlResponse(
-    { policyControls: { enableMcpWrite: true } },
+    { company: { policies: { enableMcpWrite: true } } },
     (client) => client.assertMcpWriteEnabled(123),
   );
-  assert.match(body.query, /policyControls\(companyId: \$companyId\)/);
+  assert.match(body.query, /company\(id: \$companyId\)/);
+  assert.doesNotMatch(body.query, /policyControls/);
   assert.match(body.query, /enableMcpWrite/);
   assert.deepEqual(body.variables, { companyId: 123 });
 });
 
-test('assertMcpWriteEnabled rejects disabled and missing policies', async () => {
-  for (const policyControls of [{ enableMcpWrite: false }, null]) {
-    await withGraphqlResponse({ policyControls }, async (client) => {
+test('assertMcpWriteEnabled rejects a disabled policy', async () => {
+  for (const policies of [{ enableMcpWrite: false }, {}]) {
+    await withGraphqlResponse({ company: { policies } }, async (client) => {
       await assert.rejects(
         client.assertMcpWriteEnabled(123),
         (error) => (
@@ -47,6 +48,19 @@ test('assertMcpWriteEnabled rejects disabled and missing policies', async () => 
       );
     });
   }
+});
+
+test('assertMcpWriteEnabled rejects a company it cannot read', async () => {
+  await withGraphqlResponse({ company: null }, async (client) => {
+    await assert.rejects(
+      client.assertMcpWriteEnabled(123),
+      (error) => error.status === 403 && /policy of company 123/.test(error.publicMessage),
+    );
+  });
+});
+
+test('assertMcpWriteEnabled keeps the platform default for a company without a policy row', async () => {
+  await withGraphqlResponse({ company: { policies: null } }, (client) => client.assertMcpWriteEnabled(123));
 });
 
 test('assertMcpWriteEnabled allows writes when the backend lacks only the policy field', async () => {

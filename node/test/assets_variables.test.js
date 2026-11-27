@@ -27,3 +27,13 @@ test('assets search empty is omitted', () => {
   const v = buildAssetsVariables(248, 1, 20);
   assert.deepEqual(v.search, {});
 });
+
+test('asset_type filters by inventory section', () => {
+  const section = (assetType) => buildAssetsVariables(1, 1, 10, { assetType }).search;
+  assert.deepEqual(section('Repository'), { notAssetType: ['cloud', 'domain', 'api', 'certificate'] });
+  assert.deepEqual(section('fqdn'), { assetType: 'domain' });
+  assert.deepEqual(section('api'), { assetType: 'api' });
+  assert.deepEqual(section(' Cloud '), { assetType: 'cloud' });
+  assert.deepEqual(section('API'), { assetType: 'api' });
+  assert.deepEqual(section(undefined), {});
+});
