@@ -7,8 +7,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 
-import { ASSET_TYPES, GraphQLClient } from './graphql_client.js';
-import { listMutations, describeMutation } from './mutations.js';
+import { ASSET_TYPES, GraphQLClient, assertAssetTypeChosen, buildCreateAssetInput } from './graphql_client.js';
+import { listMutations, describeMutation, buildMutationQuery } from './mutations.js';
 import { TIMELINE_OBJECT_TYPES } from './timeline.js';
 import { OWNERSHIP_FILTERS, VISUALIZATION_KINDS, WIDGET_SIZES } from './custom_dashboards.js';
 import pkg from '../../package.json' with { type: 'json' };
@@ -126,7 +126,7 @@ function buildServer() {
   // instead of data to serialize as JSON text. Errors still go through sanitizeError.
   function tool(name, {
     title, desc, schema, write = false, destructive = false, local = false,
-    policy = write, companyId = (args) => args.company_id, raw = false,
+    policy = write, companyId = (args) => args.company_id, raw = false, validate = null,
   }, handler) {
     server.registerTool(
       name,
@@ -143,6 +143,7 @@ function buildServer() {
       },
       async (args) => {
         try {
+          if (validate) validate(args);
           const checkPolicy = typeof policy === 'function' ? policy(args) : policy;
           if (checkPolicy) await gql.assertMcpWriteEnabled(await companyId(args));
           const result = await handler(args);
@@ -662,6 +663,9 @@ function buildServer() {
     write: true,
     destructive: true,
     policy: ({ name }) => name !== 'createTicket',
+    validate: ({ name, variables = {} }) => {
+      if (name === 'createAsset') assertAssetTypeChosen(buildMutationQuery(name, variables).variables.input);
+    },
   }, ({ name, variables = {}, return_fields = null }) =>
     gql.executeMutation(name, variables, return_fields));
 
@@ -737,7 +741,7 @@ function buildServer() {
     desc: 'Create an asset. asset_type picks the inventory section it lands in: repository (Repositories; requires repo_url, the source code repository URL, and derives the name from it unless name is given), fqdn (FQDN; requires name and url) or api (API; requires name and url). If the user did not say which type the asset is, ask before calling; never infer it. Required: company_id, asset_type. Optional: description, business_impact (LOW, MEDIUM, HIGH, NOT_DEFINED), exploitability (INTERNET_FACING, INTERNAL, NOT_DEFINED), tags; extra = advanced CreateAssetInput fields (not companyId, name, url, assetType or repoUrl).',
     schema: z.object({
       company_id: z.number(),
-      asset_type: z.enum(ASSET_TYPES),
+      asset_type: z.string().optional().describe(ASSET_TYPES.join(', ')),
       name: z.string().optional(),
       repo_url: z.string().optional(),
       url: z.string().optional(),
@@ -748,6 +752,7 @@ function buildServer() {
       extra: z.record(z.string(), z.any()).optional(),
     }),
     write: true,
+    validate: buildCreateAssetInput,
   }, (a) => gql.create_asset(a));
 
   tool('create_ticket', {
